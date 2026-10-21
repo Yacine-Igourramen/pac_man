@@ -2,10 +2,13 @@ import json
 import sys
 from dataclasses import dataclass, field
 
+# @property is just so that u can use methods as
+# attributes and call them as such
+
 
 @dataclass
 class Config:
-    """Holds all config keys required."""
+    """holds all config keys required"""
 
     highscore_filename: str = "highscores.json"
     lives: int = 3
@@ -26,8 +29,10 @@ class Config:
         return self.points_per_super_pacgum
 
 
+# func that handles all stupid input 
+
 def validate_config(config: Config) -> None:
-    """Check config values for minimums, types, and negative numbers."""
+    """checks config values for mins, types, and negative numbers"""
     if (
         not isinstance(config.highscore_filename, str)
         or not config.highscore_filename.strip()
@@ -46,7 +51,7 @@ def validate_config(config: Config) -> None:
                 f"'{key}' must be an integer greater than 0, instead got {val}"
             )
 
-    # Values that must be >= 0 (no negatives)
+    # Values that must be >= 0
     non_negative_fields = {
         "points_per_pacgum": config.points_per_pacgum,
         "points_per_super_pacgum": config.points_per_super_pacgum,
@@ -57,7 +62,7 @@ def validate_config(config: Config) -> None:
         if not isinstance(val, int) or isinstance(val, bool) or val < 0:
             raise ValueError(f"'{key}' cannot be negative, got {val}")
 
-    # Levels check
+    # levels check
     if not isinstance(config.levels, list) or len(config.levels) == 0:
         raise ValueError("levels must be a non-empty list")
 
@@ -84,7 +89,7 @@ def validate_config(config: Config) -> None:
 
 
 def load_config(file_path: str) -> dict:
-    """Read file line by line, ignore comment lines, and load JSON."""
+    """read file line by line, ignore comment lines, and load json"""
     lines = []
     with open(file_path, "r") as f:
         for line in f:
@@ -94,7 +99,7 @@ def load_config(file_path: str) -> dict:
 
 
 def parser(args: list[str]) -> Config:
-    """Check sys.argv, load config, validate values, and return Config."""
+    """checks sysargv, load config, validate values, and return config"""
     if len(args) != 2 or not args[1].endswith(".json"):
         print("[ERROR] Usage: python3 main.py <config.json>")
         sys.exit(1)

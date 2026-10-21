@@ -1,0 +1,35 @@
+{
+  # path to highscore storing file
+  "highscore_filename": "highscores.json",
+
+  # number of lives the player starts with
+  "lives": 3,
+
+  # total pacgums per level
+  "pacgum": 42,
+
+  # score values per item
+  "points_per_pacgum": 10,
+  "points_per_super_pacgum": 50,
+  "points_per_ghost": 200,
+
+  # generator seed for Level 1 default is 42
+  "seed": 42,
+
+  # time limit per level in seconds
+  "level_max_time": 90,
+
+  # array of level sizes
+  "levels": [
+    { "width": 19, "height": 21 },
+    { "width": 19, "height": 21 },
+    { "width": 21, "height": 21 },
+    { "width": 21, "height": 23 },
+    { "width": 23, "height": 23 },
+    { "width": 23, "height": 25 },
+    { "width": 25, "height": 25 },
+    { "width": 27, "height": 27 },
+    { "width": 29, "height": 29 },
+    { "width": 31, "height": 31 }
+  ]
+}

@@ -32,39 +32,65 @@ class Config:
 # func that handles all stupid input 
 
 def validate_config(config: Config) -> None:
-    """checks config values for mins, types, and negative numbers"""
+    """hecks config values and clamps invalid inputs to safe defaults"""
+    default_levels = [
+        {"width": 19, "height": 21},
+        {"width": 19, "height": 21},
+        {"width": 21, "height": 21},
+        {"width": 21, "height": 23},
+        {"width": 23, "height": 23},
+        {"width": 23, "height": 25},
+        {"width": 25, "height": 25},
+        {"width": 27, "height": 27},
+        {"width": 29, "height": 29},
+        {"width": 31, "height": 31},
+    ]
+
     if (
         not isinstance(config.highscore_filename, str)
         or not config.highscore_filename.strip()
     ):
-        raise ValueError("highscore_filename must be a non-empty string")
+        print(
+            f"[WARNING] 'highscore_filename' must be a non-empty string "
+            f"(got {config.highscore_filename!r}), defaulting to 'highscores.json'"
+        )
+        config.highscore_filename = "highscores.json"
 
-    # Values that must be strictly > 0
-    positive_fields = {
-        "lives": config.lives,
-        "pacgum": config.pacgum,
-        "level_max_time": config.level_max_time,
+    # values that must be strictly > 0
+    positive_defaults = {
+        "lives": 3,
+        "pacgum": 42,
+        "level_max_time": 90,
     }
-    for key, val in positive_fields.items():
+    for key, default in positive_defaults.items():
+        val = getattr(config, key)
         if not isinstance(val, int) or isinstance(val, bool) or val <= 0:
-            raise ValueError(
-                f"'{key}' must be an integer greater than 0, instead got {val}"
+            print(
+                f"[WARNING] '{key}' must be an integer greater than 0, "
+                f"got {val}. Defaulting to {default}"
             )
+            setattr(config, key, default)
 
-    # Values that must be >= 0
-    non_negative_fields = {
-        "points_per_pacgum": config.points_per_pacgum,
-        "points_per_super_pacgum": config.points_per_super_pacgum,
-        "points_per_ghost": config.points_per_ghost,
-        "seed": config.seed,
+    # values that must be >= 0
+    non_negative_defaults = {
+        "points_per_pacgum": 10,
+        "points_per_super_pacgum": 50,
+        "points_per_ghost": 200,
+        "seed": 42,
     }
-    for key, val in non_negative_fields.items():
+    for key, default in non_negative_defaults.items():
+        val = getattr(config, key)
         if not isinstance(val, int) or isinstance(val, bool) or val < 0:
-            raise ValueError(f"'{key}' cannot be negative, got {val}")
+            print(
+                f"[WARNING] '{key}' cannot be negative, got {val}. "
+                f"Defaulting to {default}"
+            )
+            setattr(config, key, default)
 
     # levels check
     if not isinstance(config.levels, list) or len(config.levels) == 0:
-        raise ValueError("levels must be a non-empty list")
+        print("[WARNING] 'levels' must be a non-empty list, using default levels")
+        config.levels = [lvl.copy() for lvl in default_levels]
 
     for i, lvl in enumerate(config.levels):
         if (
@@ -72,20 +98,26 @@ def validate_config(config: Config) -> None:
             or "width" not in lvl
             or "height" not in lvl
         ):
-            raise ValueError(
-                f"Level {i + 1} must be a dict with 'width' and 'height'"
+            print(
+                f"[WARNING] Level {i + 1} must be a dict with 'width' and 'height', "
+                f"defaulting to 19x21"
             )
-        w, h = lvl["width"], lvl["height"]
-        if (
-            not isinstance(w, int)
-            or not isinstance(h, int)
-            or w <= 0
-            or h <= 0
-        ):
-            raise ValueError(
-                f"Level {i + 1} width and height must be positive, "
-                f"got ({w}, {h})"
+            config.levels[i] = {"width": 19, "height": 21}
+            continue
+
+        w, h = lvl.get("width"), lvl.get("height")
+        if not isinstance(w, int) or isinstance(w, bool) or w <= 0:
+            print(
+                f"[WARNING] Level {i + 1} width must be positive, "
+                f"got {w}. Defaulting to 19"
             )
+            lvl["width"] = 19
+        if not isinstance(h, int) or isinstance(h, bool) or h <= 0:
+            print(
+                f"[WARNING] Level {i + 1} height must be positive, "
+                f"got {h}. Defaulting to 21"
+            )
+            lvl["height"] = 21
 
 
 def load_config(file_path: str) -> dict:

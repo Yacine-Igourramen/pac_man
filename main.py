@@ -12,6 +12,21 @@ class GameState(Enum):
     GAME_OVER = auto()
 
 
+class ghost():
+    def __init__(self, player, batch, x, y):
+        self.player = player
+        self.maze = player.maze
+        self.size = player.size
+        self.batch = batch
+        self.trans = player.translator
+        self.cell = (y, x)
+        self.cord = (0, 0)
+        self.object = pyglet.shapes.Rectangle(self.cord[0], self.cord[1], size//2, size//2, color=(255, 25, 55, 255), batch=batch, group=None)
+        self.set_cord()
+
+    def set_cord(self):
+            self.cord = self.translator[self.cell]
+
 class player():
     def __init__(self, health, coordinator, maze, size, batch, dots):
         self.name = "pac man"
@@ -100,11 +115,20 @@ class maze_assets():
         self.walls.append(self.player.object)
 
 
+class menu_screen():
+    def __init__(self, screen_w, screen_h):
+        self.menu_batch = pyglet.graphics.Batch()
+        self.txt = []
+        self.txt.append(pyglet.text.Label(text="PAC-MAN", font_size=100, color=(255, 255, 255, 255), x=screen_w//4, y=screen_h//2, anchor_x='left', anchor_y='baseline', align='left', multiline=False, batch=self.menu_batch, group=None))
+        self.txt.append(pyglet.text.Label(text="press ENTER to start", font_size=20, color=(255, 255, 255, 255), x=screen_w//4, y=screen_h//2-300, anchor_x='left', anchor_y='baseline', align='left', multiline=False, batch=self.menu_batch, group=None))
+
+
 class GameWindow(pyglet.window.Window):
     def __init__(self, maze, size, width, height):
         super().__init__(fullscreen=True)
-        self.state = GameState.PLAYING
+        self.state = GameState.MENU
         self.game_play = maze_assets(maze, size, width, height)
+        self.menu = menu_screen(width, height)
 
     def on_draw(self):
         self.clear()
@@ -117,16 +141,25 @@ class GameWindow(pyglet.window.Window):
 
     def draw_gameplay(self):
         self.game_play.main_batch.draw()
+    
+    def draw_menu(self):
+        self.menu.menu_batch.draw()
 
     def on_key_press(self, symbol, modifiers):
-        if symbol == key.W:
-            self.game_play.player.move_player("up")
-        if symbol == key.D:
-            self.game_play.player.move_player("right")
-        if symbol == key.S:
-            self.game_play.player.move_player("down")
-        if symbol == key.A:
-            self.game_play.player.move_player("left")
+        if self.state == GameState.PLAYING:
+            if symbol == key.W:
+                self.game_play.player.move_player("up")
+            if symbol == key.D:
+                self.game_play.player.move_player("right")
+            if symbol == key.S:
+                self.game_play.player.move_player("down")
+            if symbol == key.A:
+                self.game_play.player.move_player("left")
+        if self.state == GameState.MENU:
+            if symbol == key.ENTER:
+                self.state = GameState.PLAYING
+            if symbol == key.ESCAPE:
+                self.state = self.close()
 
     def update(self, dt):
         if self.state == GameState.PLAYING:
@@ -134,11 +167,12 @@ class GameWindow(pyglet.window.Window):
         elif self.state == GameState.MENU:
             pass
 
+    pyglet.clock.schedule_interval(self.update, 1 / 60)
+
 
 def main():
     ma = MazeGenerator(size=(20, 20))
     ma.generate(15)
-    print(ma.maze)
     for row_idx, row in enumerate(ma.maze):
         for col_idx, val in enumerate(row):
             if val != 15:
@@ -152,7 +186,6 @@ def main():
     w_cells = len(ma.maze[0])
     h_cells = len(ma.maze)
     ma.maze.reverse()
-    print(ma.maze)
     size = (screen_width-200)//w_cells if (screen_width-200)//w_cells < (screen_height-300)//h_cells else (screen_height-300)//h_cells
     print(size)
     win = GameWindow(ma.maze, size, screen.width, screen.height)

@@ -12,21 +12,6 @@ class GameState(Enum):
     GAME_OVER = auto()
 
 
-class ghost():
-    def __init__(self, player, batch, x, y):
-        self.player = player
-        self.maze = player.maze
-        self.size = player.size
-        self.batch = batch
-        self.trans = player.translator
-        self.cell = (y, x)
-        self.cord = (0, 0)
-        self.object = pyglet.shapes.Rectangle(self.cord[0], self.cord[1], size//2, size//2, color=(255, 25, 55, 255), batch=batch, group=None)
-        self.set_cord()
-
-    def set_cord(self):
-            self.cord = self.translator[self.cell]
-
 class player():
     def __init__(self, health, coordinator, maze, size, batch, dots):
         self.name = "pac man"
@@ -166,8 +151,6 @@ class GameWindow(pyglet.window.Window):
             pass
         elif self.state == GameState.MENU:
             pass
-
-    pyglet.clock.schedule_interval(self.update, 1 / 60)
 
 
 def main():

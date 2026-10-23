@@ -57,6 +57,7 @@ class player():
         self.cord = self.translator[self.cell]
 
     def move_player(self, direction):
+        print(direction)
         box = self.maze[self.cell[0]][self.cell[1]]
         if direction == "up" and box & 1 == 0:
             self.cell = (self.cell[0] + 1, self.cell[1])
@@ -66,6 +67,8 @@ class player():
             self.cell = (self.cell[0] - 1, self.cell[1])
         elif direction == "left" and box & 8 == 0:
             self.cell = (self.cell[0], self.cell[1] - 1)
+        else:
+            return
         self.set_cord()
         self.object.x = self.cord[0]
         self.object.y = self.cord[1]
@@ -79,10 +82,8 @@ class maze_assets():
         self.walls = []
         w_cells = len(maze[0])
         h_cells = len(maze)
-        w_offset = (width-(w_cells*size))//2
-        h_offset = (height-(h_cells*size))//2
-        w_start = w_offset
-        h_start = h_offset
+        w_start = (width-(w_cells*size))//2
+        h_start = (height-(h_cells*size))//2
         for c, line in enumerate(maze):
             for i, cell in enumerate(line):
                 if cell & 1 :
@@ -105,6 +106,9 @@ class GameWindow(pyglet.window.Window):
         super().__init__(fullscreen=True)
         self.state = GameState.PLAYING
         self.game_play = maze_assets(maze, size, width, height)
+        self.direction = None
+        self.maze = maze
+        pyglet.clock.schedule_interval(self.update, 1 / 5)
 
     def on_draw(self):
         self.clear()
@@ -119,20 +123,23 @@ class GameWindow(pyglet.window.Window):
         self.game_play.main_batch.draw()
 
     def on_key_press(self, symbol, modifiers):
-        if symbol == key.W:
-            self.game_play.player.move_player("up")
-        if symbol == key.D:
-            self.game_play.player.move_player("right")
-        if symbol == key.S:
-            self.game_play.player.move_player("down")
-        if symbol == key.A:
-            self.game_play.player.move_player("left")
+        box = self.maze[self.game_play.player.cell[0]][self.game_play.player.cell[1]]
+        if symbol == key.W and box & 1 == 0:
+            self.direction = "up"
+        if symbol == key.D and box & 2 == 0:
+            self.direction = "right"
+        if symbol == key.S and box & 4 == 0:
+            self.direction = "down"
+        if symbol == key.A and box & 8 == 0:
+            self.direction = "left"
 
     def update(self, dt):
         if self.state == GameState.PLAYING:
-            pass
+            self.game_play.player.move_player(self.direction)
         elif self.state == GameState.MENU:
             pass
+
+    
 
 
 def main():

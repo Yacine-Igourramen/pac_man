@@ -101,13 +101,22 @@ class maze_assets():
         self.walls.append(self.player.object)
 
 
+class menu_screen():
+    def __init__(self, screen_w, screen_h):
+        self.menu_batch = pyglet.graphics.Batch()
+        self.txt = []
+        self.txt.append(pyglet.text.Label(text="PAC-MAN", font_size=100, color=(255, 255, 255, 255), x=screen_w//4, y=screen_h//2, anchor_x='left', anchor_y='baseline', align='left', multiline=False, batch=self.menu_batch, group=None))
+        self.txt.append(pyglet.text.Label(text="press ENTER to start", font_size=20, color=(255, 255, 255, 255), x=screen_w//4, y=screen_h//2-300, anchor_x='left', anchor_y='baseline', align='left', multiline=False, batch=self.menu_batch, group=None))
+
+
 class GameWindow(pyglet.window.Window):
     def __init__(self, maze, size, width, height):
         super().__init__(fullscreen=True)
-        self.state = GameState.PLAYING
+        self.state = GameState.MENU
         self.game_play = maze_assets(maze, size, width, height)
         self.direction = None
         self.maze = maze
+        self.menu = menu_screen(width, height)
         pyglet.clock.schedule_interval(self.update, 1 / 5)
 
     def on_draw(self):
@@ -121,6 +130,9 @@ class GameWindow(pyglet.window.Window):
 
     def draw_gameplay(self):
         self.game_play.main_batch.draw()
+    
+    def draw_menu(self):
+        self.menu.menu_batch.draw()
 
     def on_key_press(self, symbol, modifiers):
         box = self.maze[self.game_play.player.cell[0]][self.game_play.player.cell[1]]
@@ -145,7 +157,6 @@ class GameWindow(pyglet.window.Window):
 def main():
     ma = MazeGenerator(size=(20, 20))
     ma.generate(15)
-    print(ma.maze)
     for row_idx, row in enumerate(ma.maze):
         for col_idx, val in enumerate(row):
             if val != 15:
@@ -159,7 +170,6 @@ def main():
     w_cells = len(ma.maze[0])
     h_cells = len(ma.maze)
     ma.maze.reverse()
-    print(ma.maze)
     size = (screen_width-200)//w_cells if (screen_width-200)//w_cells < (screen_height-300)//h_cells else (screen_height-300)//h_cells
     print(size)
     win = GameWindow(ma.maze, size, screen.width, screen.height)

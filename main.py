@@ -57,7 +57,6 @@ class player():
         self.cord = self.translator[self.cell]
 
     def move_player(self, direction):
-        print(direction)
         box = self.maze[self.cell[0]][self.cell[1]]
         if direction == "up" and box & 1 == 0:
             self.cell = (self.cell[0] + 1, self.cell[1])
@@ -144,6 +143,11 @@ class GameWindow(pyglet.window.Window):
             self.direction = "down"
         if symbol == key.A and box & 8 == 0:
             self.direction = "left"
+        if self.state == GameState.MENU:
+            if symbol == key.ENTER:
+                self.state = GameState.PLAYING
+            if symbol == key.ESCAPE:
+                self.state = self.close()
 
     def update(self, dt):
         if self.state == GameState.PLAYING:

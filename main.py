@@ -25,9 +25,10 @@ class player():
         self.dots[self.cell] = None
         self.maze[self.cell[0]][self.cell[1]] = self.maze[self.cell[0]][self.cell[1]] ^ 16
         self.translator = coordinator
-        self.cord = (0, 0)
+        self.cord = self.translator[self.cell]
+        self.old_cord = (0, 0)
         self.score = 0
-        self.set_cord()
+        self.mid_move = False
         self.score_obj = pyglet.text.Label(
                             text=f'score = {self.score}',
                             font_name=None,
@@ -54,9 +55,20 @@ class player():
             self.dots[self.cell].delete()
             self.dots[self.cell] = None
             self.maze[self.cell[0]][self.cell[1]] = self.maze[self.cell[0]][self.cell[1]] ^ 16
+        self.old_cord = self.cord
         self.cord = self.translator[self.cell]
+    
+    def move(self):
+        print(self.old_cord, self.cord)
+        if self.old_cord == self.cord:
+            self.mid_move = False
+        self.object.x = self.cord[0]
+        self.object.y = self.cord[1]
 
     def move_player(self, direction, tmp_dir):
+        if self.mid_move:
+            self.move()
+            return
         box = self.maze[self.cell[0]][self.cell[1]]
         if tmp_dir[0] == "up" and box & 1 == 0:
             direction[0] = tmp_dir[0]
@@ -82,8 +94,8 @@ class player():
         else:
             return
         self.set_cord()
-        self.object.x = self.cord[0]
-        self.object.y = self.cord[1]
+        self.mid_move = True
+
 
 
 class maze_assets():

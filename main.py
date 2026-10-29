@@ -4,6 +4,8 @@ from pyglet import shapes
 from pyglet.math import Mat4
 from pyglet.window import key
 from enum import Enum, auto
+from parser import parser, Config
+import sys
 
 
 class GameState(Enum):
@@ -18,6 +20,8 @@ class player():
         self.health = health
         self.maze = maze
         self.dots = dots
+        self.direction = None
+        self.tmp_dir = None
         self.cell = (len(maze)//2, len(maze[0])//2)
         if maze[self.cell[0]][self.cell[1]] == 15:
             self.cell = (self.cell[0], self.cell[1]-1)
@@ -78,31 +82,58 @@ class player():
         self.object.x = self.old_cord[0]
         self.object.y = self.old_cord[1]
 
-    def move_player(self, direction, tmp_dir):
+    def set_direction(self, Direction):
+        box = self.maze[self.cell[0]][self.cell[1]]
+        if Direction == "up":
+            if box & 1 == 0:
+                self.direction = "up"
+                self.tmp_dir = None
+            else:
+                self.tmp_dir = "up"
+        if Direction == "right":
+            if box & 2 == 0:
+                self.direction = "right"
+                self.tmp_dir = None
+            else:
+                self.tmp_dir = "right"
+        if Direction == "down":
+            if box & 4 == 0:
+                self.direction = "down"
+                self.tmp_dir = None
+            else:
+                self.tmp_dir = "down"
+        if Direction == "left":
+            if box & 8 == 0:
+                self.direction = "left"
+                self.tmp_dir = None
+            else:
+                self.tmp_dir = "left"
+
+    def move_player(self):
         if self.mid_move:
             self.move()
             return
         box = self.maze[self.cell[0]][self.cell[1]]
-        if tmp_dir[0] == "up" and box & 1 == 0:
-            direction[0] = tmp_dir[0]
-            tmp_dir[0] = None
-        elif tmp_dir[0] == "right" and box & 2 == 0:
-            direction[0] = tmp_dir[0]
-            tmp_dir[0] = None
-        elif tmp_dir[0] == "down" and box & 4 == 0:
-            direction[0] = tmp_dir[0]
-            tmp_dir[0] = None
-        elif tmp_dir[0] == "left" and box & 8 == 0:
-            direction[0] = tmp_dir[0]
-            tmp_dir[0] = None
+        if self.tmp_dir == "up" and box & 1 == 0:
+            self.direction = self.tmp_dir
+            self.tmp_dir = None
+        elif self.tmp_dir == "right" and box & 2 == 0:
+            self.direction = self.tmp_dir
+            self.tmp_dir = None
+        elif self.tmp_dir == "down" and box & 4 == 0:
+            self.direction = self.tmp_dir
+            self.tmp_dir = None
+        elif self.tmp_dir == "left" and box & 8 == 0:
+            self.direction = self.tmp_dir
+            self.tmp_dir = None
 
-        if direction[0] == "up" and box & 1 == 0:
+        if self.direction == "up" and box & 1 == 0:
             self.cell = (self.cell[0] + 1, self.cell[1])
-        elif direction[0] == "right" and box & 2 == 0:
+        elif self.direction == "right" and box & 2 == 0:
             self.cell = (self.cell[0], self.cell[1] + 1)
-        elif direction[0] == "down" and box & 4 == 0:
+        elif self.direction == "down" and box & 4 == 0:
             self.cell = (self.cell[0] - 1, self.cell[1])
-        elif direction[0] == "left" and box & 8 == 0:
+        elif self.direction == "left" and box & 8 == 0:
             self.cell = (self.cell[0], self.cell[1] - 1)
         else:
             return
@@ -146,15 +177,14 @@ class menu_screen():
 
 
 class GameWindow(pyglet.window.Window):
-    def __init__(self, maze, size, width, height):
+    def __init__(self, info):
         super().__init__(fullscreen=True)
         self.state = GameState.MENU
-        self.game_play = maze_assets(maze, size, width, height)
-        self.direction = [None]
-        self.tmp_direction = [None]
-        self.maze = maze
-        self.menu = menu_screen(width, height)
-        pyglet.clock.schedule_interval(self.update, 1 / (size*6))
+        self.info = info
+        self.lvl = 0
+        self.game_play = maze_assets(info[0][0], info[0][1], info[0][2], info[0][3])
+        self.menu = menu_screen(info[0][2], info[0][3])
+        pyglet.clock.schedule_interval(self.update, 1/(info[0][1]*8))
 
     def on_draw(self):
         self.clear()
@@ -173,31 +203,18 @@ class GameWindow(pyglet.window.Window):
 
     def on_key_press(self, symbol, modifiers):
         if self.state == GameState.PLAYING:
-            box = self.maze[self.game_play.player.cell[0]][self.game_play.player.cell[1]]
             if symbol == key.W:
-                if box & 1 == 0:
-                    self.direction[0] = "up"
-                    self.tmp_direction[0] = None
-                else:
-                    self.tmp_direction[0] = "up"
+                self.game_play.player.set_direction("up")
             if symbol == key.D:
-                if box & 2 == 0:
-                    self.direction[0] = "right"
-                    self.tmp_direction[0] = None
-                else:
-                    self.tmp_direction[0] = "right"
+                self.game_play.player.set_direction("right")
             if symbol == key.S:
-                if box & 4 == 0:
-                    self.direction[0] = "down"
-                    self.tmp_direction[0] = None
-                else:
-                    self.tmp_direction[0] = "down"
+                self.game_play.player.set_direction("down")
             if symbol == key.A:
-                if box & 8 == 0:
-                    self.direction[0] = "left"
-                    self.tmp_direction[0] = None
-                else:
-                    self.tmp_direction[0] = "left"
+                self.game_play.player.set_direction("left")
+            if symbol == key.SPACE:
+                self.lvl += 1
+                self.game_play = maze_assets(self.info[self.lvl][0], self.info[self.lvl][1], self.info[self.lvl][2], self.info[self.lvl][3])
+                pyglet.clock.schedule_interval(self.update, 1/(self.info[self.lvl][1]))
         if self.state == GameState.MENU:
             if symbol == key.ENTER:
                 self.state = GameState.PLAYING
@@ -206,30 +223,40 @@ class GameWindow(pyglet.window.Window):
 
     def update(self, dt):
         if self.state == GameState.PLAYING:
-            self.game_play.player.move_player(self.direction, self.tmp_direction)
+            self.game_play.player.move_player()
         elif self.state == GameState.MENU:
             pass
 
 
-def main():
-    ma = MazeGenerator(size=(30, 30))
-    ma.generate(15)
-    for row_idx, row in enumerate(ma.maze):
-        for col_idx, val in enumerate(row):
-            if val != 15:
-                ma.maze[row_idx][col_idx] = val ^ 16
-    ####
+def size_detector(maze):
     display = pyglet.display.get_display()
     screen = display.get_default_screen()
     screen_width = screen.width
     screen_height = screen.height
     ####
-    w_cells = len(ma.maze[0])
-    h_cells = len(ma.maze)
-    ma.maze.reverse()
+    w_cells = len(maze[0])
+    h_cells = len(maze)
+    maze.reverse()
     size = (screen_width-200)//w_cells if (screen_width-200)//w_cells < (screen_height-300)//h_cells else (screen_height-300)//h_cells
     print(size)
-    win = GameWindow(ma.maze, size, screen.width, screen.height)
+    return [maze, size, screen_width, screen_height]
+
+
+def main():
+    conf = parser(sys.argv)
+    mazes = []
+    for i in conf.levels:
+        mazes.append(MazeGenerator(size=(i["width"], i["height"])))
+        mazes[-1].generate(conf.seed)
+        for row_idx, row in enumerate(mazes[-1].maze):
+            for col_idx, val in enumerate(row):
+                if val != 15:
+                    mazes[-1].maze[row_idx][col_idx] = val ^ 16
+    info = []
+    for i in mazes:
+        info.append(size_detector(i.maze))
+    win = GameWindow(info)
+
     pyglet.app.run()
 
 

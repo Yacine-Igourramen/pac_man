@@ -193,7 +193,7 @@ class GameWindow(pyglet.window.Window):
         self.lvl = 0
         self.game_play = maze_assets(info[0][0], info[0][1], info[0][2], info[0][3])
         self.menu = menu_screen(info[0][2], info[0][3])
-        pyglet.clock.schedule_interval(self.update, 1/(info[0][1]*8))
+        pyglet.clock.schedule_interval(self.update, 1/(info[0][1]*7))
 
     def on_draw(self):
         self.clear()

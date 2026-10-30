@@ -1,3 +1,11 @@
+import os
+import sys
+
+# Ensure local mazegenerator package is found if not installed system-wide
+maze_gen_path = os.path.join(os.path.dirname(__file__), "mazegenerator-00001", "mazegenerator-2.1.0-py3-none-any")
+if os.path.exists(maze_gen_path) and maze_gen_path not in sys.path:
+    sys.path.insert(0, maze_gen_path)
+
 from mazegenerator import MazeGenerator
 import pyglet
 from pyglet import shapes
@@ -45,7 +53,10 @@ class player():
                             batch=batch,
                             group=None
                         )
-        self.object = pyglet.shapes.Rectangle(self.cord[0], self.cord[1], size//2, size//2, color=(255, 25, 55, 255), batch=batch, group=None)
+        image_path = os.path.join(os.path.dirname(__file__), "player.png")
+        image = pyglet.image.load(image_path)
+        self.object = pyglet.sprite.Sprite(image, x=self.cord[0], y=self.cord[1], batch=batch)
+        self.object.scale = size / image.width
 
     def set_cord(self):
         if self.maze[self.cell[0]][self.cell[1]] & 16 > 0:
@@ -108,7 +119,7 @@ class maze_assets():
                     self.walls.append(pyglet.shapes.Line(i*size+w_start, c*size+h_start, i*size+w_start, c*size+h_start+size, color=(255, 255, 255, 255), batch=self.main_batch, group=None))
                 if cell & 16:
                     self.dots[(c, i)] = pyglet.shapes.Circle((w_start+i*size)+size//2, (h_start+c*size)+size//2, size//14, color=(25, 255, 25, 255), batch=self.main_batch, group=None)
-                self.boxes[(c,i)] = ((w_start+i*size)+size//4, (h_start+c*size)+size//4)
+                self.boxes[(c, i)] = (w_start + i * size, h_start + c * size)
         self.player = player(3, self.boxes, maze, size, self.main_batch, self.dots)
         self.walls.append(self.player.object)
 

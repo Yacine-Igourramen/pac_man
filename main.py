@@ -1,7 +1,6 @@
 import os
 import sys
 
-# Ensure local mazegenerator package is found if not installed system-wide
 maze_gen_path = os.path.join(os.path.dirname(__file__), "mazegenerator-00001", "mazegenerator-2.1.0-py3-none-any")
 if os.path.exists(maze_gen_path) and maze_gen_path not in sys.path:
     sys.path.insert(0, maze_gen_path)

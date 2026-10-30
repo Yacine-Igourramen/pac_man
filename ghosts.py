@@ -1,5 +1,3 @@
-"""ghost class that chases the player using bfs."""
-
 from collections import deque
 from typing import Dict, List, Tuple
 import pyglet

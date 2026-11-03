@@ -71,24 +71,27 @@ class player():
         self.cord = self.translator[self.cell]
 
     def move(self):
-        print(self.old_cord, self.cord)
-        if self.old_cord == self.cord:
-            self.mid_move = False
-            return
+        distance = 2
+
         x = self.old_cord[0]
         y = self.old_cord[1]
-        move = 1
-        if self.cord[0] > self.old_cord[0]:
-            x += move
-        if self.cord[1] > self.old_cord[1]:
-            y += move
-        if self.cord[0] < self.old_cord[0]:
-            x -= move
-        if self.cord[1] < self.old_cord[1]:
-            y -= move
+
+        if self.cord[0] > x:
+            x = min(x + distance, self.cord[0])
+        elif self.cord[0] < x:
+            x = max(x - distance, self.cord[0])
+
+        if self.cord[1] > y:
+            y = min(y + distance, self.cord[1])
+        elif self.cord[1] < y:
+            y = max(y - distance, self.cord[1])
+
         self.old_cord = (x, y)
-        self.object.x = self.old_cord[0]
-        self.object.y = self.old_cord[1]
+        self.object.x = x
+        self.object.y = y
+
+        if self.old_cord == self.cord:
+            self.mid_move = False
 
     def set_direction(self, Direction):
         box = self.maze[self.cell[0]][self.cell[1]]
@@ -153,31 +156,33 @@ class maze_assets():
     def __init__(self, maze, size, width, height):
         self.main_batch = pyglet.graphics.Batch()
         self.boxes = {}
-        ##self.floor = []
+        self.floor = []
         self.dots = {}
         self.walls = []
         w_cells = len(maze[0])
         h_cells = len(maze)
         w_start = (width-(w_cells*size))//2
         h_start = (height-(h_cells*size))//2
-        for c, line in enumerate(maze):
-            for i, cell in enumerate(line):
-                if cell & 1 :
-                    self.walls.append(pyglet.shapes.Line(i*size+w_start, c*size+h_start+size, i*size+w_start+size, c*size+h_start+size, color=(255, 25, 255, 255), batch=self.main_batch, group=None, thickness=5))
-                if cell & 2 :
-                    self.walls.append(pyglet.shapes.Line(i*size+w_start+size, c*size+h_start+size, i*size+w_start+size, c*size+h_start, color=(255, 25, 255, 255), batch=self.main_batch, group=None, thickness=5))
-                if cell & 4 :
-                    self.walls.append(pyglet.shapes.Line(i*size+w_start, c*size+h_start, i*size+w_start+size, c*size+h_start, color=(255, 25, 255, 255), batch=self.main_batch, group=None, thickness=5))
-                if cell & 8 :
-                    self.walls.append(pyglet.shapes.Line(i*size+w_start, c*size+h_start, i*size+w_start, c*size+h_start+size, color=(255, 25, 255, 255), batch=self.main_batch, group=None, thickness=5))
-                if cell & 16:
-                    self.dots[(c, i)] = pyglet.shapes.Circle((w_start+i*size)+size//2, (h_start+c*size)+size//2, size//14, color=(25, 255, 25, 255), batch=self.main_batch, group=None)
-                self.boxes[(c, i)] = (w_start + i * size, h_start + c * size)
         image_path = os.path.join(os.path.dirname(__file__), "floor.png")
         image = pyglet.image.load(image_path)
-        # for cord in self.boxes.values():
-        #     self.floor.append(pyglet.sprite.Sprite(image, x=cord[0], y=cord[1], batch=self.main_batch))
-        #     self.floor[-1].scale = size / image.width
+        for c, line in enumerate(maze):
+            for i, cell in enumerate(line):
+                self.boxes[(c, i)] = (w_start + i * size, h_start + c * size)
+        for cord in self.boxes.values():
+            self.floor.append(pyglet.sprite.Sprite(image, x=cord[0], y=cord[1], batch=self.main_batch))
+            self.floor[-1].scale = size / image.width
+        for c, line in enumerate(maze):
+                    for i, cell in enumerate(line):
+                        if cell & 1 :
+                            self.walls.append(pyglet.shapes.Line(i*size+w_start, c*size+h_start+size, i*size+w_start+size, c*size+h_start+size, color=(255, 25, 255, 255), batch=self.main_batch, group=None, thickness=7))
+                        if cell & 2 :
+                            self.walls.append(pyglet.shapes.Line(i*size+w_start+size, c*size+h_start+size, i*size+w_start+size, c*size+h_start, color=(255, 25, 255, 255), batch=self.main_batch, group=None, thickness=7))
+                        if cell & 4 :
+                            self.walls.append(pyglet.shapes.Line(i*size+w_start, c*size+h_start, i*size+w_start+size, c*size+h_start, color=(255, 25, 255, 255), batch=self.main_batch, group=None, thickness=7))
+                        if cell & 8 :
+                            self.walls.append(pyglet.shapes.Line(i*size+w_start, c*size+h_start, i*size+w_start, c*size+h_start+size, color=(255, 25, 255, 255), batch=self.main_batch, group=None, thickness=7))
+                        if cell & 16:
+                            self.dots[(c, i)] = pyglet.shapes.Circle((w_start+i*size)+size//2, (h_start+c*size)+size//2, size//14, color=(25, 255, 25, 255), batch=self.main_batch, group=None)    
         self.player = player(3, self.boxes, maze, size, self.main_batch, self.dots)
         self.walls.append(self.player.object)
 
@@ -198,7 +203,7 @@ class GameWindow(pyglet.window.Window):
         self.lvl = 0
         self.game_play = maze_assets(info[0][0], info[0][1], info[0][2], info[0][3])
         self.menu = menu_screen(info[0][2], info[0][3])
-        pyglet.clock.schedule_interval(self.update, 1/(info[0][1]*5))
+        pyglet.clock.schedule_interval(self.update, 1/(info[0][1]*2.5))
 
     def on_draw(self):
         self.clear()
@@ -229,7 +234,7 @@ class GameWindow(pyglet.window.Window):
                 self.lvl += 1
                 self.game_play = maze_assets(self.info[self.lvl][0], self.info[self.lvl][1], self.info[self.lvl][2], self.info[self.lvl][3])
                 pyglet.clock.unschedule(self.update)
-                pyglet.clock.schedule_interval(self.update, 1/(self.info[self.lvl][1]*5))
+                pyglet.clock.schedule_interval(self.update, 1/(self.info[self.lvl][1]*2.5))
         if self.state == GameState.MENU:
             if symbol == key.ENTER:
                 self.state = GameState.PLAYING
@@ -252,7 +257,7 @@ def size_detector(maze):
     w_cells = len(maze[0])
     h_cells = len(maze)
     maze.reverse()
-    size = (screen_width-200)//w_cells if (screen_width-200)//w_cells < (screen_height-300)//h_cells else (screen_height-300)//h_cells
+    size = (screen_width)//w_cells if (screen_width)//w_cells < (screen_height-100)//h_cells else (screen_height-100)//h_cells
     print(size)
     return [maze, size, screen_width, screen_height]
 

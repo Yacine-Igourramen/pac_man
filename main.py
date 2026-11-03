@@ -12,6 +12,7 @@ from pyglet.math import Mat4
 from pyglet.window import key
 from enum import Enum, auto
 from parser import parser, Config
+import time
 
 
 class GameState(Enum):
@@ -19,26 +20,70 @@ class GameState(Enum):
     PLAYING = auto()
     GAME_OVER = auto()
 
-
-class player():
-    def __init__(self, health, coordinator, maze, size, batch, dots):
-        self.name = "pac man"
-        self.health = health
+## the maze stuff
+class maze_assets():
+    def __init__(self, maze, size, width, height):
+        ## a special batch
+        self.main_batch = pyglet.graphics.Batch()
+        ## this dictionary is gonna be used by the player to translate their position from a maze cell to screen coordinates
+        self.translator = {}
+        ## and this one holds the cell and the corresponding pac-gum
+        self.pac_gums = {}
+        ## just a list to hold the maze drawings
+        self.objects = []
+        ## the maze because the player needs it even tho its not used here
         self.maze = maze
-        self.dots = dots
-        self.direction = None
-        self.tmp_dir = None
-        self.cell = (len(maze)//2, len(maze[0])//2)
-        if maze[self.cell[0]][self.cell[1]] == 15:
-            self.cell = (self.cell[0], self.cell[1]-1)
-        self.dots[self.cell].delete()
-        self.dots[self.cell] = None
-        self.maze[self.cell[0]][self.cell[1]] = self.maze[self.cell[0]][self.cell[1]] ^ 16
-        self.translator = coordinator
-        self.cord = self.translator[self.cell]
-        self.old_cord = (0, 0)
-        self.score = 0
-        self.mid_move = False
+        self.size = size
+        image_path = os.path.join(os.path.dirname(__file__), "floor.png")
+        image = pyglet.image.load(image_path)
+        ## a lot of calculations are happening below
+        w_cells = len(maze[0])
+        h_cells = len(maze)
+        w_start = (width-(w_cells*size))//2
+        h_start = (height-(h_cells*size))//2
+        for c, line in enumerate(maze):
+            for i, cell in enumerate(line):
+                ## we fill the translator with the coodinates the player can be in
+                self.translator[(c, i)] = (w_start + i * size, h_start + c * size)
+        for cord in self.translator.values():
+            ## we use the same player coordinates to fill the floor of the cell
+            self.objects.append(pyglet.sprite.Sprite(image, x=cord[0], y=cord[1], batch=self.main_batch))
+            ## and scale it accordingly 
+            self.objects[-1].scale = size / image.width
+        ## we added the floors first now the walls so they're above them
+        for c, line in enumerate(maze):
+            for i, cell in enumerate(line):
+                ## just checking the bit and drawing the wall based on the size
+                if cell & 1 :
+                    self.objects.append(pyglet.shapes.Line(i*size+w_start, c*size+h_start+size, i*size+w_start+size, c*size+h_start+size, color=(255, 25, 255, 255), batch=self.main_batch, group=None, thickness=7))
+                if cell & 2 :
+                    self.objects.append(pyglet.shapes.Line(i*size+w_start+size, c*size+h_start+size, i*size+w_start+size, c*size+h_start, color=(255, 25, 255, 255), batch=self.main_batch, group=None, thickness=7))
+                if cell & 4 :
+                    self.objects.append(pyglet.shapes.Line(i*size+w_start, c*size+h_start, i*size+w_start+size, c*size+h_start, color=(255, 25, 255, 255), batch=self.main_batch, group=None, thickness=7))
+                if cell & 8 :
+                    self.objects.append(pyglet.shapes.Line(i*size+w_start, c*size+h_start, i*size+w_start, c*size+h_start+size, color=(255, 25, 255, 255), batch=self.main_batch, group=None, thickness=7))
+                ## here we fill the pac-gums dictionary
+                if cell != 15:
+                    self.pac_gums[(c, i)] = pyglet.shapes.Circle((w_start+i*size)+size//2, (h_start+c*size)+size//2, size//14, color=(25, 255, 25, 255), batch=self.main_batch, group=None)    
+
+
+## the player object that hold all the data the player needs to function
+class player():
+    def __init__(self, health, maze: maze_assets):
+        self.name = "pac man" ## a name idk why i added it
+        self.health = health ## health i guess idk
+        self.batch = pyglet.graphics.Batch() ## a batch to make rendering more effecient
+        self.maze = maze.maze ## the actual maze as a double list of int
+        self.pac_gums = maze.pac_gums ## this is a dictionary that holds the coordinates and the corresponding pac_gum
+        self.direction = None ## the direction where pac_man/women is currentely moving
+        self.tmp_dir = None ## the movement queue
+        self.cell = (0, 0) ## his/her current cell
+        self.set_player() ## a function to set the player in the middle of the maze
+        self.translator = maze.translator ## this is a dictionary that translate the current cell into screen coordinates
+        self.cord = self.translator[self.cell] ## we're translating the cell we set a 2 lines ago to screen coordinates (look above)
+        self.old_cord = (0, 0) ## this is used during movement read the move() function for more info
+        self.score = 0 ## looks like the score
+        self.mid_move = False ## a flag to know if we reached the wanted cell or not yet
         self.score_obj = pyglet.text.Label(
                             text=f'score = {self.score}',
                             font_name=None,
@@ -46,6 +91,22 @@ class player():
                             italic=False,
                             color=(255, 255, 255, 255),
                             x=10,
+                            y=10,                         ## score text
+                            width=None,
+                            height=None,
+                            anchor_x='left',
+                            anchor_y='baseline',
+                            align='left',
+                            multiline=False,
+                            batch=self.batch
+                        )
+        self.dt_update = pyglet.text.Label(
+                            text=f'score = {self.score}',
+                            font_name=None,
+                            font_size=50,
+                            italic=False,
+                            color=(255, 255, 255, 255),
+                            x=500,
                             y=10,
                             width=None,
                             height=None,
@@ -53,31 +114,69 @@ class player():
                             anchor_y='baseline',
                             align='left',
                             multiline=False,
-                            batch=batch
+                            batch=self.batch
                         )
+        self.rendering = pyglet.text.Label(
+                            text=f'score = {self.score}',
+                            font_name=None,
+                            font_size=50,
+                            italic=False,
+                            color=(255, 255, 255, 255),
+                            x=10,
+                            y=900,
+                            width=None,
+                            height=None,
+                            anchor_x='left',
+                            anchor_y='baseline',
+                            align='left',
+                            multiline=False,
+                            batch=self.batch
+                        )
+        ## u changed what's below before so u know
         image_path = os.path.join(os.path.dirname(__file__), "player.png")
-        image = pyglet.image.load(image_path)
-        self.object = pyglet.sprite.Sprite(image, x=self.cord[0], y=self.cord[1], batch=batch)
-        self.object.scale = size / image.width
+        self.image = pyglet.image.load(image_path)
+        self.object = pyglet.sprite.Sprite(self.image, x=self.cord[0], y=self.cord[1], batch=self.batch)
+        self.object.scale = maze.size / self.image.width
 
+
+    ## its in the name of the function
+    def change_maze(self, maze: maze_assets):
+        self.direction = None ## we have to stop movement
+        self.mid_move = False
+        self.maze = maze.maze ## we change the maze
+        self.pac_gums = maze.pac_gums ## the pac_gums too
+        self.set_player()
+        self.translator = maze.translator ## the coordinates translator too
+        ## u know the rest
+        self.cord = self.translator[self.cell]
+        self.object.scale = maze.size / self.image.width
+        self.object.x = self.cord[0]
+        self.object.y = self.cord[1]
+
+    # this function used to be long
     def set_cord(self):
-        if self.maze[self.cell[0]][self.cell[1]] & 16 > 0:
-            self.score += 10
-            self.score_obj.text = f"score = {self.score}"
-            self.dots[self.cell].delete()
-            self.dots[self.cell] = None
-            self.maze[self.cell[0]][self.cell[1]] = self.maze[self.cell[0]][self.cell[1]] ^ 16
         self.old_cord = self.cord
         self.cord = self.translator[self.cell]
 
+    # puts the player in the middle
+    def set_player(self):
+        self.cell = (len(self.maze)//2, len(self.maze[0])//2)# we devide the maze and if the mid point is a closed cell we move 1 cell to the left
+        if self.maze[self.cell[0]][self.cell[1]] == 15:
+            self.cell = (self.cell[0], self.cell[1]-1)
+        self.pac_gums[self.cell].delete()
+        self.pac_gums[self.cell] = None
+        self.maze[self.cell[0]][self.cell[1]] = self.maze[self.cell[0]][self.cell[1]] ^ 16
+
+    ## basically moves the player on the screen by the amount of pixels equal to distance
     def move(self):
-        distance = 2
+        distance = 2 ## how many pixels to move by each call still needs tweaking
 
         x = self.old_cord[0]
-        y = self.old_cord[1]
+        y = self.old_cord[1] ## we save where the player used to be
 
+        ## below we move the player basec on where the new location is relative to the old one
         if self.cord[0] > x:
-            x = min(x + distance, self.cord[0])
+            x = min(x + distance, self.cord[0]) 
         elif self.cord[0] < x:
             x = max(x - distance, self.cord[0])
 
@@ -85,14 +184,23 @@ class player():
             y = min(y + distance, self.cord[1])
         elif self.cord[1] < y:
             y = max(y - distance, self.cord[1])
+        ## this is why we save the old ones
 
         self.old_cord = (x, y)
         self.object.x = x
         self.object.y = y
 
+        ## below the moment we reach the new location we check the 16th bit in the maze for the pac_gum and eat it
         if self.old_cord == self.cord:
             self.mid_move = False
+            if self.pac_gums[self.cell] is not None:
+                self.score += 10
+                self.score_obj.text = f"score = {self.score}"
+                self.pac_gums[self.cell].delete()
+                self.pac_gums[self.cell] = None
+                self.maze[self.cell[0]][self.cell[1]] = self.maze[self.cell[0]][self.cell[1]] ^ 16
 
+    ## we take a direction and check if its valid based on the curent location in the maze if not we put it in the queue
     def set_direction(self, Direction):
         box = self.maze[self.cell[0]][self.cell[1]]
         if Direction == "up":
@@ -120,11 +228,14 @@ class player():
             else:
                 self.tmp_dir = "left"
 
+    ## this one make the movement happen after it checks again for some reason anyway i'il see to it later its 5:40 rn
     def move_player(self):
+        ##if we're mid movement no need to check all of this again
         if self.mid_move:
             self.move()
             return
         box = self.maze[self.cell[0]][self.cell[1]]
+        ## the queue direction has piority
         if self.tmp_dir == "up" and box & 1 == 0:
             self.direction = self.tmp_dir
             self.tmp_dir = None
@@ -138,6 +249,7 @@ class player():
             self.direction = self.tmp_dir
             self.tmp_dir = None
 
+        ## in here we change the cell and make the movement happen
         if self.direction == "up" and box & 1 == 0:
             self.cell = (self.cell[0] + 1, self.cell[1])
         elif self.direction == "right" and box & 2 == 0:
@@ -148,45 +260,11 @@ class player():
             self.cell = (self.cell[0], self.cell[1] - 1)
         else:
             return
+        ## we only set the new coordinates after a movement is valid otherwise we exit
         self.set_cord()
         self.mid_move = True
 
-
-class maze_assets():
-    def __init__(self, maze, size, width, height):
-        self.main_batch = pyglet.graphics.Batch()
-        self.boxes = {}
-        self.floor = []
-        self.dots = {}
-        self.walls = []
-        w_cells = len(maze[0])
-        h_cells = len(maze)
-        w_start = (width-(w_cells*size))//2
-        h_start = (height-(h_cells*size))//2
-        image_path = os.path.join(os.path.dirname(__file__), "floor.png")
-        image = pyglet.image.load(image_path)
-        for c, line in enumerate(maze):
-            for i, cell in enumerate(line):
-                self.boxes[(c, i)] = (w_start + i * size, h_start + c * size)
-        for cord in self.boxes.values():
-            self.floor.append(pyglet.sprite.Sprite(image, x=cord[0], y=cord[1], batch=self.main_batch))
-            self.floor[-1].scale = size / image.width
-        for c, line in enumerate(maze):
-                    for i, cell in enumerate(line):
-                        if cell & 1 :
-                            self.walls.append(pyglet.shapes.Line(i*size+w_start, c*size+h_start+size, i*size+w_start+size, c*size+h_start+size, color=(255, 25, 255, 255), batch=self.main_batch, group=None, thickness=7))
-                        if cell & 2 :
-                            self.walls.append(pyglet.shapes.Line(i*size+w_start+size, c*size+h_start+size, i*size+w_start+size, c*size+h_start, color=(255, 25, 255, 255), batch=self.main_batch, group=None, thickness=7))
-                        if cell & 4 :
-                            self.walls.append(pyglet.shapes.Line(i*size+w_start, c*size+h_start, i*size+w_start+size, c*size+h_start, color=(255, 25, 255, 255), batch=self.main_batch, group=None, thickness=7))
-                        if cell & 8 :
-                            self.walls.append(pyglet.shapes.Line(i*size+w_start, c*size+h_start, i*size+w_start, c*size+h_start+size, color=(255, 25, 255, 255), batch=self.main_batch, group=None, thickness=7))
-                        if cell & 16:
-                            self.dots[(c, i)] = pyglet.shapes.Circle((w_start+i*size)+size//2, (h_start+c*size)+size//2, size//14, color=(25, 255, 25, 255), batch=self.main_batch, group=None)    
-        self.player = player(3, self.boxes, maze, size, self.main_batch, self.dots)
-        self.walls.append(self.player.object)
-
-
+## the menu screen and its 2 texts
 class menu_screen():
     def __init__(self, screen_w, screen_h):
         self.menu_batch = pyglet.graphics.Batch()
@@ -195,59 +273,68 @@ class menu_screen():
         self.txt.append(pyglet.text.Label(text="press ENTER to start", font_size=20, color=(255, 255, 255, 255), x=screen_w//4, y=screen_h//2-300, anchor_x='left', anchor_y='baseline', align='left', multiline=False, batch=self.menu_batch, group=None))
 
 
+## this is the window class
 class GameWindow(pyglet.window.Window):
-    def __init__(self, info):
-        super().__init__(fullscreen=True)
+    def __init__(self, info, health):
+        super().__init__(fullscreen=True, vsync=False)
         self.state = GameState.MENU
         self.info = info
         self.lvl = 0
-        self.game_play = maze_assets(info[0][0], info[0][1], info[0][2], info[0][3])
-        self.menu = menu_screen(info[0][2], info[0][3])
-        pyglet.clock.schedule_interval(self.update, 1/(info[0][1]*2.5))
+        self.game_play = maze_assets(info[0][0], info[0][1], info[0][2], info[0][3]) ## this is the maze class
+        self.menu = menu_screen(info[0][2], info[0][3]) ## this is the menu as the name say
+        self.player = player(health, maze=self.game_play) ## the player exists seperately from the maze
+        pyglet.clock.schedule_interval(self.update, 1/(info[0][1]*2.5)) ## the refresh rate 
 
+    ## the function that writes to the window with its 3 options
     def on_draw(self):
+        start = time.perf_counter()
         self.clear()
         if self.state == GameState.MENU:
-            self.draw_menu()
+            self.menu.menu_batch.draw()
         elif self.state == GameState.PLAYING:
-            self.draw_gameplay()
+            self.game_play.main_batch.draw()
+            self.player.batch.draw()
         elif self.state == GameState.GAME_OVER:
             self.draw_game_over()
-
-    def draw_gameplay(self):
-        self.game_play.main_batch.draw()
-
-    def draw_menu(self):
-        self.menu.menu_batch.draw()
-
+        elapsed = (time.perf_counter() - start) * 1000
+        self.player.rendering.text = f"Draw time: {elapsed:.2f} ms"
+        
+    ## this one handeles key presses
     def on_key_press(self, symbol, modifiers):
         if self.state == GameState.PLAYING:
             if symbol == key.W:
-                self.game_play.player.set_direction("up")
+                self.player.set_direction("up")
             if symbol == key.D:
-                self.game_play.player.set_direction("right")
+                self.player.set_direction("right")
             if symbol == key.S:
-                self.game_play.player.set_direction("down")
+                self.player.set_direction("down")
             if symbol == key.A:
-                self.game_play.player.set_direction("left")
-            if symbol == key.SPACE:
-                self.lvl += 1
-                self.game_play = maze_assets(self.info[self.lvl][0], self.info[self.lvl][1], self.info[self.lvl][2], self.info[self.lvl][3])
-                pyglet.clock.unschedule(self.update)
-                pyglet.clock.schedule_interval(self.update, 1/(self.info[self.lvl][1]*2.5))
+                self.player.set_direction("left")
+                
         if self.state == GameState.MENU:
             if symbol == key.ENTER:
                 self.state = GameState.PLAYING
             if symbol == key.ESCAPE:
                 self.state = self.close()
 
+    ## this is the one that get's called many times a second
     def update(self, dt):
+        fps = 1 / dt if dt > 0 else 0
+        self.player.dt_update.text = f"Update FPS: {fps:.1f} | dt: {dt * 1000:.2f} ms"
         if self.state == GameState.PLAYING:
-            self.game_play.player.move_player()
+            ## we move the player which gives us continues movement
+            self.player.move_player()
+            ## below i check if all the pac-gums are eaten then i move to the next lvl
+            if all(value is None for value in self.player.pac_gums.values()):
+                self.lvl += 1
+                self.game_play = maze_assets(self.info[self.lvl][0], self.info[self.lvl][1], self.info[self.lvl][2], self.info[self.lvl][3])
+                self.player.change_maze(self.game_play)
+                pyglet.clock.unschedule(self.update)
+                pyglet.clock.schedule_interval(self.update, 1/(self.info[self.lvl][1]*2.5))
         elif self.state == GameState.MENU:
             pass
 
-
+## this one only detects the screen size to make the maze dynamic
 def size_detector(maze):
     display = pyglet.display.get_display()
     screen = display.get_default_screen()
@@ -257,6 +344,7 @@ def size_detector(maze):
     w_cells = len(maze[0])
     h_cells = len(maze)
     maze.reverse()
+    ## all the cells are squares so we take the smaller side and make it the size o the square
     size = (screen_width)//w_cells if (screen_width)//w_cells < (screen_height-100)//h_cells else (screen_height-100)//h_cells
     print(size)
     return [maze, size, screen_width, screen_height]
@@ -267,17 +355,20 @@ def main():
         sys.argv.append("config.json")
     conf = parser(sys.argv)
     mazes = []
-    for i in conf.levels:
+    ## we generate all the mazes
+    for j, i in enumerate(conf.levels):
         mazes.append(MazeGenerator(size=(i["width"], i["height"])))
-        mazes[-1].generate(conf.seed)
-        for row_idx, row in enumerate(mazes[-1].maze):
-            for col_idx, val in enumerate(row):
-                if val != 15:
-                    mazes[-1].maze[row_idx][col_idx] = val ^ 16
+        ## only the first one uses the seed
+        if j == 0:
+            mazes[-1].generate(conf.seed)
+        else:
+            mazes[-1].generate()
     info = []
+    ## we fill ino with the data each maze needs
     for i in mazes:
         info.append(size_detector(i.maze))
-    win = GameWindow(info)
+    ## we make the window
+    win = GameWindow(info, conf.lives)
 
     pyglet.app.run()
 

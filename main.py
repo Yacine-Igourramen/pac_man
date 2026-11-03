@@ -56,9 +56,31 @@ class player():
                             batch=batch
                         )
         image_path = os.path.join(os.path.dirname(__file__), "player.png")
-        image = pyglet.image.load(image_path)
-        self.object = pyglet.sprite.Sprite(image, x=self.cord[0], y=self.cord[1], batch=batch)
-        self.object.scale = size / image.width
+        sheet = pyglet.image.load(image_path)
+        grid = pyglet.image.ImageGrid(sheet, 4, 4)
+        # resting stances:
+        self.resting_stances = {
+            "down": grid[3, 0].get_texture(),
+            "up": grid[2, 0].get_texture(),
+            "left": grid[1, 0].get_texture(),
+            "right": grid[0, 0].get_texture(),
+        }
+        frame_duration = 0.1  # 100ms per frame
+        self.animations = {
+            "down": pyglet.image.Animation.from_image_sequence([grid[3, c] for c in range(4)], duration=frame_duration, loop=True),
+            "up": pyglet.image.Animation.from_image_sequence([grid[2, c] for c in range(4)], duration=frame_duration, loop=True),
+            "left": pyglet.image.Animation.from_image_sequence([grid[1, c] for c in range(4)], duration=frame_duration, loop=True),
+            "right": pyglet.image.Animation.from_image_sequence([grid[0, c] for c in range(4)], duration=frame_duration, loop=True),
+        }
+        # to start game in neutral pos
+        self.object = pyglet.sprite.Sprite(self.resting_stances["down"], x=self.cord[0], y=self.cord[1], batch=batch)
+        self.object.scale = size / self.resting_stances["down"].width
+
+    def update_animation(self, moving=False):
+        dir_key = self.direction if self.direction in self.animations else "down"
+        target = self.animations[dir_key] if moving else self.resting_stances[dir_key]
+        if self.object.image is not target:
+            self.object.image = target
 
     def set_cord(self):
         if self.maze[self.cell[0]][self.cell[1]] & 16 > 0:
@@ -116,6 +138,7 @@ class player():
                 self.tmp_dir = None
             else:
                 self.tmp_dir = "left"
+        self.update_animation(moving=self.mid_move)
 
     def move_player(self):
         if self.mid_move:
@@ -144,9 +167,11 @@ class player():
         elif self.direction == "left" and box & 8 == 0:
             self.cell = (self.cell[0], self.cell[1] - 1)
         else:
+            self.update_animation(moving=False)
             return
         self.set_cord()
         self.mid_move = True
+        self.update_animation(moving=True)
 
 
 class maze_assets():
@@ -163,21 +188,18 @@ class maze_assets():
         for c, line in enumerate(maze):
             for i, cell in enumerate(line):
                 if cell & 1 :
-                    self.walls.append(pyglet.shapes.Line(i*size+w_start, c*size+h_start+size, i*size+w_start+size, c*size+h_start+size, color=(255, 25, 255, 255), batch=self.main_batch, group=None, thickness=5))
+                    self.walls.append(pyglet.shapes.Line(i*size+w_start, c*size+h_start+size, i*size+w_start+size, c*size+h_start+size, color=(255, 255, 255, 255), batch=self.main_batch, group=None, thickness=5))
                 if cell & 2 :
-                    self.walls.append(pyglet.shapes.Line(i*size+w_start+size, c*size+h_start+size, i*size+w_start+size, c*size+h_start, color=(255, 25, 255, 255), batch=self.main_batch, group=None, thickness=5))
+                    self.walls.append(pyglet.shapes.Line(i*size+w_start+size, c*size+h_start+size, i*size+w_start+size, c*size+h_start, color=(255, 255, 255, 255), batch=self.main_batch, group=None, thickness=5))
                 if cell & 4 :
-                    self.walls.append(pyglet.shapes.Line(i*size+w_start, c*size+h_start, i*size+w_start+size, c*size+h_start, color=(255, 25, 255, 255), batch=self.main_batch, group=None, thickness=5))
+                    self.walls.append(pyglet.shapes.Line(i*size+w_start, c*size+h_start, i*size+w_start+size, c*size+h_start, color=(255, 255, 255, 255), batch=self.main_batch, group=None, thickness=5))
                 if cell & 8 :
-                    self.walls.append(pyglet.shapes.Line(i*size+w_start, c*size+h_start, i*size+w_start, c*size+h_start+size, color=(255, 25, 255, 255), batch=self.main_batch, group=None, thickness=5))
+                    self.walls.append(pyglet.shapes.Line(i*size+w_start, c*size+h_start, i*size+w_start, c*size+h_start+size, color=(255, 255, 255, 255), batch=self.main_batch, group=None, thickness=5))
                 if cell & 16:
                     self.dots[(c, i)] = pyglet.shapes.Circle((w_start+i*size)+size//2, (h_start+c*size)+size//2, size//14, color=(25, 255, 25, 255), batch=self.main_batch, group=None)
                 self.boxes[(c, i)] = (w_start + i * size, h_start + c * size)
         image_path = os.path.join(os.path.dirname(__file__), "floor.png")
         image = pyglet.image.load(image_path)
-        # for cord in self.boxes.values():
-        #     self.floor.append(pyglet.sprite.Sprite(image, x=cord[0], y=cord[1], batch=self.main_batch))
-        #     self.floor[-1].scale = size / image.width
         self.player = player(3, self.boxes, maze, size, self.main_batch, self.dots)
         self.walls.append(self.player.object)
 
@@ -217,15 +239,17 @@ class GameWindow(pyglet.window.Window):
 
     def on_key_press(self, symbol, modifiers):
         if self.state == GameState.PLAYING:
-            if symbol == key.W:
+            if symbol == key.W or symbol == key.UP:
                 self.game_play.player.set_direction("up")
-            if symbol == key.D:
+            if symbol == key.D or symbol == key.RIGHT:
                 self.game_play.player.set_direction("right")
-            if symbol == key.S:
+            if symbol == key.S or symbol == key.DOWN:
                 self.game_play.player.set_direction("down")
-            if symbol == key.A:
+            if symbol == key.A or symbol == key.LEFT:
                 self.game_play.player.set_direction("left")
             if symbol == key.SPACE:
+                if hasattr(self.game_play, "player") and hasattr(self.game_play.player, "object"):
+                    self.game_play.player.object.delete()
                 self.lvl += 1
                 self.game_play = maze_assets(self.info[self.lvl][0], self.info[self.lvl][1], self.info[self.lvl][2], self.info[self.lvl][3])
                 pyglet.clock.unschedule(self.update)

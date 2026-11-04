@@ -18,6 +18,7 @@ import time
 class GameState(Enum):
     MENU = auto()
     PLAYING = auto()
+    PAUSE = auto()
     GAME_OVER = auto()
 
 ## the maze stuff
@@ -271,6 +272,21 @@ class menu_screen():
         self.txt = []
         self.txt.append(pyglet.text.Label(text="PAC-MAN", font_size=100, color=(255, 255, 255, 255), x=screen_w//4, y=screen_h//2, anchor_x='left', anchor_y='baseline', align='left', multiline=False, batch=self.menu_batch, group=None))
         self.txt.append(pyglet.text.Label(text="press ENTER to start", font_size=20, color=(255, 255, 255, 255), x=screen_w//4, y=screen_h//2-300, anchor_x='left', anchor_y='baseline', align='left', multiline=False, batch=self.menu_batch, group=None))
+        self.txt.append(pyglet.text.Label(text="press ESCAPE to exit", font_size=20, color=(255, 255, 255, 255), x=screen_w//4, y=screen_h//2-350, anchor_x='left', anchor_y='baseline', align='left', multiline=False, batch=self.menu_batch, group=None))
+        
+
+
+class Pause_screen():
+    def __init__(self,screen_w, screen_h):
+        self.pause_batch = pyglet.graphics.Batch()
+        self.assets = []
+        self.assets.append(pyglet.shapes.Rectangle(x=0, y=0, width=screen_w, height=screen_h, color=(0, 0, 0), batch=self.pause_batch))
+        self.assets[-1].opacity = 150
+        self.assets.append(pyglet.shapes.Rectangle(x=screen_w//4, y=screen_h//4, width=screen_w//2, height=screen_h//2, color=(0, 0, 0), batch=self.pause_batch))
+        self.assets.append(pyglet.text.Label(text=f'paused', font_name=None,font_size=50, color=(255, 255, 255, 255),x=screen_w/2-150,y=screen_h//2+50,width=None,height=None,anchor_x='left',anchor_y='baseline',align='left',multiline=False,batch=self.pause_batch))
+        self.assets.append(pyglet.text.Label(text=f'press p to continue', font_name=None,font_size=20, color=(255, 255, 255, 255),x=screen_w/2-100,y=screen_h//2,width=None,height=None,anchor_x='left',anchor_y='baseline',align='left',multiline=False,batch=self.pause_batch))
+        self.assets.append(pyglet.text.Label(text=f'press R to restart', font_name=None, font_size=20, color=(255, 255, 255, 255),x=screen_w/2-100,y=screen_h//2-50,width=None,height=None,anchor_x='left',anchor_y='baseline',align='left',multiline=False,batch=self.pause_batch))
+        self.assets.append(pyglet.text.Label(text=f'press ESCAPE to exit', font_name=None, font_size=20, color=(255, 255, 255, 255),x=screen_w/2-100,y=screen_h//2-100,width=None,height=None,anchor_x='left',anchor_y='baseline',align='left',multiline=False,batch=self.pause_batch))
 
 
 ## this is the window class
@@ -280,9 +296,11 @@ class GameWindow(pyglet.window.Window):
         self.state = GameState.MENU
         self.info = info
         self.lvl = 0
-        self.game_play = maze_assets(info[0][0], info[0][1], info[0][2], info[0][3]) ## this is the maze class
+        self.health = health
+        self.game_play = None ## this is the maze class
         self.menu = menu_screen(info[0][2], info[0][3]) ## this is the menu as the name say
-        self.player = player(health, maze=self.game_play) ## the player exists seperately from the maze
+        self.pause = Pause_screen(info[0][2], info[0][3])
+        self.player = None ## the player exists seperately from the maze
         pyglet.clock.schedule_interval(self.update, 1/(info[0][1]*2.5)) ## the refresh rate 
 
     ## the function that writes to the window with its 3 options
@@ -294,10 +312,14 @@ class GameWindow(pyglet.window.Window):
         elif self.state == GameState.PLAYING:
             self.game_play.main_batch.draw()
             self.player.batch.draw()
+            elapsed = (time.perf_counter() - start) * 1000
+            self.player.rendering.text = f"Draw time: {elapsed:.2f} ms"
+        elif self.state == GameState.PAUSE:
+            self.game_play.main_batch.draw()
+            self.player.batch.draw()
+            self.pause.pause_batch.draw()
         elif self.state == GameState.GAME_OVER:
             self.draw_game_over()
-        elapsed = (time.perf_counter() - start) * 1000
-        self.player.rendering.text = f"Draw time: {elapsed:.2f} ms"
         
     ## this one handeles key presses
     def on_key_press(self, symbol, modifiers):
@@ -310,9 +332,24 @@ class GameWindow(pyglet.window.Window):
                 self.player.set_direction("down")
             if symbol == key.A:
                 self.player.set_direction("left")
-                
-        if self.state == GameState.MENU:
+            ## press p to pause the game
+            if symbol == key.P or symbol == key.ESCAPE:
+                self.state = GameState.PAUSE
+        elif self.state == GameState.PAUSE:
+            ## repress it to continue
+            if symbol == key.P:
+                self.state = GameState.PLAYING
+            if symbol == key.R:
+                self.game_play = maze_assets(self.info[self.lvl][0], self.info[self.lvl][1], self.info[self.lvl][2], self.info[self.lvl][3])
+                self.player.change_maze(self.game_play)
+                self.state = GameState.PLAYING
+            if symbol == key.ESCAPE:
+                self.game_play = None
+                self.state = GameState.MENU
+        elif self.state == GameState.MENU:
             if symbol == key.ENTER:
+                self.game_play = maze_assets(self.info[0][0], self.info[0][1], self.info[0][2], self.info[0][3])
+                self.player = player(self.health, maze=self.game_play)
                 self.state = GameState.PLAYING
             if symbol == key.ESCAPE:
                 self.state = self.close()
@@ -320,8 +357,8 @@ class GameWindow(pyglet.window.Window):
     ## this is the one that get's called many times a second
     def update(self, dt):
         fps = 1 / dt if dt > 0 else 0
-        self.player.dt_update.text = f"Update FPS: {fps:.1f} | dt: {dt * 1000:.2f} ms"
         if self.state == GameState.PLAYING:
+            self.player.dt_update.text = f"Update FPS: {fps:.1f} | dt: {dt * 1000:.2f} ms"
             ## we move the player which gives us continues movement
             self.player.move_player()
             ## below i check if all the pac-gums are eaten then i move to the next lvl

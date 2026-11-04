@@ -7,17 +7,18 @@ class Ghost:
     """ghost entity ooo scary"""
 
     def __init__(
-        self,
-        cell: Tuple[int, int],
-        coordinator: Dict[Tuple[int, int], Tuple[int, int]],
-        maze: List[List[int]],
-        size: int,
-        batch: pyglet.graphics.Batch,
-        color: Tuple[int, int, int, int] = (255, 0, 0, 255),
-    ) -> None:
+                self,
+                cell: Tuple[int, int],
+                coordinator: Dict[Tuple[int, int], Tuple[int, int]],
+                maze: List[List[int]],
+                size: int,
+                batch: pyglet.graphics.Batch,
+                color: Tuple[int, int, int, int] = (255, 0, 0, 255),
+                group: pyglet.graphics.Group = None,
+            ) -> None:
         self.cell = cell
         self.maze = maze
-        self.trans = coordinator
+        self.last_cell = None ## this is to prevent 180 backtracking it will keep track of the last cell it was on
         self.translator = coordinator
         self.size = size
 
@@ -29,7 +30,7 @@ class Ghost:
                     self.cell = (nr, nc)
                     break
 
-        self.cord = self.trans[self.cell]
+        self.cord = self.translator[self.cell]
 
         # pglet shape for the ghost will replace with a sprite once i finish them too
         self.object = pyglet.shapes.Rectangle(
@@ -39,16 +40,17 @@ class Ghost:
             size // 2,
             color=color,
             batch=batch,
+            group=group,
         )
 
     def set_cord(self) -> None:
         # update screen coordinates and move the shape
-        self.cord = self.trans[self.cell]
+        self.cord = self.translator[self.cell]
         self.object.x = self.cord[0]
         self.object.y = self.cord[1]
 
     def bfs(self, start: Tuple[int, int], target: Tuple[int, int]) -> Tuple[int, int]:
-        # already on top of the player just a safeguard
+        # already on top of the player just a safeguard for now but should 'kill' the player
         if start == target:
             return start
 
@@ -74,7 +76,7 @@ class Ghost:
             if curr == target:
                 found = True
                 break
-
+            # row anc collumn pair
             r, c = curr
             box = self.maze[r][c]
 
@@ -85,9 +87,10 @@ class Ghost:
                     if 0 <= nr < rows and 0 <= nc < cols:
                         nxt = (nr, nc)
                         if nxt not in visited and self.maze[nr][nc] != 15:
-                            visited.add(nxt)
-                            parent[nxt] = curr
-                            queue.append(nxt)
+                            if curr != start or nxt != self.last_cell:
+                                visited.add(nxt)
+                                parent[nxt] = curr
+                                queue.append(nxt)
 
         # cant reach player so stay in place
         if not found:
@@ -108,4 +111,4 @@ class Ghost:
 
 ghost = Ghost
 
-# i will add different algos for them so each does a diff job tonight
+# i will add different algos for all 4 of them so each does a diff job tonight

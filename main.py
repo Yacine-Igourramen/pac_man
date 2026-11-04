@@ -135,10 +135,37 @@ class player():
                         )
         ## u changed what's below before so u know
         image_path = os.path.join(os.path.dirname(__file__), "player.png")
-        self.image = pyglet.image.load(image_path)
-        self.object = pyglet.sprite.Sprite(self.image, x=self.cord[0], y=self.cord[1], batch=self.batch)
-        self.object.scale = maze.size / self.image.width
+        sheet = pyglet.image.load(image_path)
+        grid = pyglet.image.ImageGrid(sheet, 4, 4)
 
+        # Resting stances (first column for each row):
+        # Top to bottom:
+        # Row 1 (top, grid row 3): front view
+        # Row 2 (grid row 2): back view
+        # Row 3 (grid row 1): left view
+        # Row 4 (bottom, grid row 0): right view
+        self.resting_stances = {
+            "down": grid[3, 0].get_texture(),
+            "up": grid[2, 0].get_texture(),
+            "left": grid[1, 0].get_texture(),
+            "right": grid[0, 0].get_texture(),
+        }
+        frame_duration = 0.1  # 100ms per frame
+        self.animations = {
+            "down": pyglet.image.Animation.from_image_sequence([grid[3, c] for c in range(4)], duration=frame_duration, loop=True),
+            "up": pyglet.image.Animation.from_image_sequence([grid[2, c] for c in range(4)], duration=frame_duration, loop=True),
+            "left": pyglet.image.Animation.from_image_sequence([grid[1, c] for c in range(4)], duration=frame_duration, loop=True),
+            "right": pyglet.image.Animation.from_image_sequence([grid[0, c] for c in range(4)], duration=frame_duration, loop=True),
+        }
+        # Start game in resting stance (front view)
+        self.object = pyglet.sprite.Sprite(self.resting_stances["down"], x=self.cord[0], y=self.cord[1], batch=self.batch)
+        self.object.scale = maze.size / self.resting_stances["down"].width
+
+    def update_animation(self, moving=False):
+        dir_key = self.direction if self.direction in self.animations else "down"
+        target = self.animations[dir_key] if moving else self.resting_stances[dir_key]
+        if self.object.image is not target:
+            self.object.image = target
 
     ## its in the name of the function
     def change_maze(self, maze: maze_assets):
@@ -150,9 +177,10 @@ class player():
         self.translator = maze.translator ## the coordinates translator too
         ## u know the rest
         self.cord = self.translator[self.cell]
-        self.object.scale = maze.size / self.image.width
+        self.object.scale = maze.size / self.resting_stances["down"].width
         self.object.x = self.cord[0]
         self.object.y = self.cord[1]
+        self.update_animation(moving=False)
 
     # this function used to be long
     def set_cord(self):
@@ -228,6 +256,7 @@ class player():
                 self.tmp_dir = None
             else:
                 self.tmp_dir = "left"
+        self.update_animation(moving=self.mid_move)
 
     ## this one make the movement happen after it checks again for some reason anyway i'il see to it later its 5:40 rn
     def move_player(self):
@@ -260,10 +289,12 @@ class player():
         elif self.direction == "left" and box & 8 == 0:
             self.cell = (self.cell[0], self.cell[1] - 1)
         else:
+            self.update_animation(moving=False)
             return
         ## we only set the new coordinates after a movement is valid otherwise we exit
         self.set_cord()
         self.mid_move = True
+        self.update_animation(moving=True)
 
 ## the menu screen and its 2 texts
 class menu_screen():
@@ -324,13 +355,13 @@ class GameWindow(pyglet.window.Window):
     ## this one handeles key presses
     def on_key_press(self, symbol, modifiers):
         if self.state == GameState.PLAYING:
-            if symbol == key.W:
+            if symbol == key.W or symbol == key.UP:
                 self.player.set_direction("up")
-            if symbol == key.D:
+            if symbol == key.D or symbol == key.RIGHT:
                 self.player.set_direction("right")
-            if symbol == key.S:
+            if symbol == key.S or symbol == key.DOWN:
                 self.player.set_direction("down")
-            if symbol == key.A:
+            if symbol == key.A or symbol == key.LEFT:
                 self.player.set_direction("left")
             ## press p to pause the game
             if symbol == key.P or symbol == key.ESCAPE:

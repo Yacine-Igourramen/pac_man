@@ -31,6 +31,9 @@ class Ghost:
                     break
 
         self.cord = self.translator[self.cell]
+        ## tracks previous position and animation state like u did for player
+        self.old_cord = self.cord
+        self.mid_move = False
 
         # pglet shape for the ghost will replace with a sprite once i finish them too
         self.object = pyglet.shapes.Rectangle(
@@ -44,10 +47,33 @@ class Ghost:
         )
 
     def set_cord(self) -> None:
-        # update screen coordinates and move the shape
+        ## save old screen position before updating to new one
+        self.old_cord = self.cord
         self.cord = self.translator[self.cell]
-        self.object.x = self.cord[0]
-        self.object.y = self.cord[1]
+
+    ## moves the ghost smoothly on screen by distance pixels like player
+    def move(self) -> None:
+        distance = 2
+
+        x = self.old_cord[0]
+        y = self.old_cord[1]
+
+        if self.cord[0] > x:
+            x = min(x + distance, self.cord[0])
+        elif self.cord[0] < x:
+            x = max(x - distance, self.cord[0])
+
+        if self.cord[1] > y:
+            y = min(y + distance, self.cord[1])
+        elif self.cord[1] < y:
+            y = max(y - distance, self.cord[1])
+
+        self.old_cord = (x, y)
+        self.object.x = x
+        self.object.y = y
+
+        if self.old_cord == self.cord:
+            self.mid_move = False
 
     def bfs(self, start: Tuple[int, int], target: Tuple[int, int]) -> Tuple[int, int]:
         # already on top of the player just a safeguard for now but should 'kill' the player
@@ -70,6 +96,16 @@ class Ghost:
             (0, -1, 8),  # left
         ]
 
+        ## count open paths from start tile to detect dead ends
+        start_box = self.maze[start[0]][start[1]]
+        open_ways = 0
+        for dr, dc, mask in moves:
+            if start_box & mask == 0:
+                nr, nc = start[0] + dr, start[1] + dc
+                if 0 <= nr < rows and 0 <= nc < cols and self.maze[nr][nc] != 15:
+                    open_ways += 1
+        is_dead_end = (open_ways <= 1)
+
         found = False
         while queue:
             curr = queue.popleft()
@@ -87,7 +123,8 @@ class Ghost:
                     if 0 <= nr < rows and 0 <= nc < cols:
                         nxt = (nr, nc)
                         if nxt not in visited and self.maze[nr][nc] != 15:
-                            if curr != start or nxt != self.last_cell:
+                            ## allow backtracking only if trapped in a dead end (mainly happens inside the 42 pattern)
+                            if curr != start or is_dead_end or nxt != self.last_cell:
                                 visited.add(nxt)
                                 parent[nxt] = curr
                                 queue.append(nxt)
@@ -104,11 +141,19 @@ class Ghost:
         return curr
 
     def move_ghost(self, player_cell: Tuple[int, int]) -> None:
-        # find next step with bfs and move
-        self.cell = self.bfs(self.cell, player_cell)
-        self.set_cord()
+        ## if mid move continue moving smoothly towards target
+        if self.mid_move:
+            self.move()
+            return
+
+        nxt_cell = self.bfs(self.cell, player_cell)
+        if nxt_cell != self.cell:
+            self.last_cell = self.cell
+            self.cell = nxt_cell
+            self.set_cord()
+            self.mid_move = True
 
 
 ghost = Ghost
 
-# i will add different algos for all 4 of them so each does a diff job tonight
+# i will add different algos for all 4 of them so each does a diff job

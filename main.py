@@ -22,6 +22,8 @@ class GameState(Enum):
     PAUSE = auto()
     GAME_OVER = auto()
 
+# i put ★★★ in front of my comments so theyre easier for u to find and read 👍🏿
+
 ## the maze stuff
 class maze_assets():
     def __init__(self, maze, size, width, height):
@@ -154,7 +156,7 @@ class player():
         sheet = pyglet.image.load(image_path)
         grid = pyglet.image.ImageGrid(sheet, 4, 4)
 
-        # resting stances (first column for each row):
+        # ★★★ resting stances (first column for each row):
         # from toop to bottom:
         # row 1 (top, grid row 3): front view
         # row 2 (grid row 2): back view
@@ -173,7 +175,7 @@ class player():
             "left": pyglet.image.Animation.from_image_sequence([grid[1, c] for c in range(4)], duration=frame_duration, loop=True),
             "right": pyglet.image.Animation.from_image_sequence([grid[0, c] for c in range(4)], duration=frame_duration, loop=True),
         }
-        # Start game in resting stance (front view)
+        # ★★★ to start game in resting stance (front view)
         self.object = pyglet.sprite.Sprite(self.resting_stances["down"], x=self.cord[0], y=self.cord[1], batch=self.batch)
         self.object.scale = maze.size / self.resting_stances["down"].width
 
@@ -320,7 +322,6 @@ class menu_screen():
         self.txt.append(pyglet.text.Label(text="PAC-MAN", font_size=100, color=(255, 255, 255, 255), x=screen_w//4, y=screen_h//2, anchor_x='left', anchor_y='baseline', align='left', multiline=False, batch=self.menu_batch, group=None))
         self.txt.append(pyglet.text.Label(text="press ENTER to start", font_size=20, color=(255, 255, 255, 255), x=screen_w//4, y=screen_h//2-300, anchor_x='left', anchor_y='baseline', align='left', multiline=False, batch=self.menu_batch, group=None))
         self.txt.append(pyglet.text.Label(text="press ESCAPE to exit", font_size=20, color=(255, 255, 255, 255), x=screen_w//4, y=screen_h//2-350, anchor_x='left', anchor_y='baseline', align='left', multiline=False, batch=self.menu_batch, group=None))
-        
 
 
 class Pause_screen():
@@ -348,7 +349,7 @@ class GameWindow(pyglet.window.Window):
         self.menu = menu_screen(info[0][2], info[0][3]) ## this is the menu as the name say
         self.pause = Pause_screen(info[0][2], info[0][3])
         self.player = None ## the player exists seperately from the maze
-        self.ghost_timer = 0.0 ## ***** added this pretty self explanatory
+        self.ghost_timer = 0.0 ## ★★★ added this pretty self explanatory
         pyglet.clock.schedule_interval(self.update, 1/(info[0][1]*2.5)) ## the refresh rate 
 
     ## the function that writes to the window with its 3 options
@@ -412,14 +413,10 @@ class GameWindow(pyglet.window.Window):
             self.player.dt_update.text = f"Update FPS: {fps:.1f} | dt: {dt * 1000:.2f} ms"
             ## we move the player which gives us continues movement
             self.player.move_player()
-            ## move the ghost towards player on a timer
-            self.ghost_timer += dt
-            if self.ghost_timer >= 0.25:
-                self.ghost_timer = 0.0
-                if self.game_play and self.player:
-                    ## ★★★ move all 4 ghosts towards the player
-                    for g in self.game_play.ghosts:
-                        g.move_ghost(self.player.cell)
+            if self.game_play and self.player:
+                ## ★★★ move all 4 ghosts smoothly every frame like player
+                for g in self.game_play.ghosts:
+                    g.move_ghost(self.player.cell)
             ## below i check if all the pac-gums are eaten then i move to the next lvl
             if all(value is None for value in self.player.pac_gums.values()):
                 self.lvl += 1

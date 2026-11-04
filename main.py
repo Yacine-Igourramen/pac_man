@@ -42,6 +42,9 @@ class maze_assets():
         ## the maze because the player needs it even tho its not used here
         self.maze = maze
         self.size = size
+        ## ★★★ store screen dimensions for placing indicators
+        self.width = width
+        self.height = height
         image_path = os.path.join(os.path.dirname(__file__), "floor.png")
         image = pyglet.image.load(image_path)
         ## a lot of calculations are happening below
@@ -94,7 +97,7 @@ class player():
         self.batch = pyglet.graphics.Batch() ## a batch to make rendering more effecient
         self.maze = maze.maze ## the actual maze as a double list of int
         self.pac_gums = maze.pac_gums  ## this is a dictionary that holds the coordinates and the corresponding pac_gum
-        self.direction = None  ## the direction where pac_man/women is currentely moving
+        self.direction = None  ## the direction where pac_man/woman is currentely moving
         self.tmp_dir = None  ## the movement queue
         self.cell = (0, 0) ## his/her current cell
         self.set_player() ## a function to set the player in the middle of the maze
@@ -151,6 +154,23 @@ class player():
                             multiline=False,
                             batch=self.batch
                         )
+        ## ★★★ lives counter indicator on the top right screen
+        self.lives_obj = pyglet.text.Label(
+                            text=f'lives = {self.health}',
+                            font_name=None,
+                            font_size=50,
+                            italic=False,
+                            color=(255, 255, 255, 255),
+                            x=maze.width - 20,
+                            y=900,
+                            width=None,
+                            height=None,
+                            anchor_x='right',
+                            anchor_y='baseline',
+                            align='right',
+                            multiline=False,
+                            batch=self.batch
+                        )
         ## u changed what's below before so u know
         image_path = os.path.join(os.path.dirname(__file__), "player.png")
         sheet = pyglet.image.load(image_path)
@@ -198,6 +218,9 @@ class player():
         self.object.scale = maze.size / self.resting_stances["down"].width
         self.object.x = self.cord[0]
         self.object.y = self.cord[1]
+        ## ★★★ update lives indicator position for new maze
+        self.lives_obj.x = maze.width - 20
+        self.lives_obj.y = 900
         self.update_animation(moving=False)
 
     # this function used to be long
@@ -210,9 +233,23 @@ class player():
         self.cell = (len(self.maze)//2, len(self.maze[0])//2) # we devide the maze and if the mid point is a closed cell we move 1 cell to the left
         if self.maze[self.cell[0]][self.cell[1]] == 15:
             self.cell = (self.cell[0], self.cell[1]-1)
-        self.pac_gums[self.cell].delete()
-        self.pac_gums[self.cell] = None
-        self.maze[self.cell[0]][self.cell[1]] = self.maze[self.cell[0]][self.cell[1]] ^ 16
+        ## ★★★ only delete pacgum if it has not been eaten yet
+        if self.pac_gums.get(self.cell) is not None:
+            self.pac_gums[self.cell].delete()
+            self.pac_gums[self.cell] = None
+            self.maze[self.cell[0]][self.cell[1]] = self.maze[self.cell[0]][self.cell[1]] ^ 16
+
+    ## ★★★ reseting the player to the middle after losing a life i want to add a short "cutsene" to it befor that later
+    def reset_position(self):
+        self.direction = None
+        self.tmp_dir = None
+        self.mid_move = False
+        self.set_player()
+        self.cord = self.translator[self.cell]
+        self.old_cord = self.cord
+        self.object.x = self.cord[0]
+        self.object.y = self.cord[1]
+        self.update_animation(moving=False)
 
     ## basically moves the player on the screen by the amount of pixels equal to distance
     def move(self):
@@ -372,7 +409,7 @@ class GameWindow(pyglet.window.Window):
 
     def draw_game_over(self):
         self.menu.menu_batch.draw()
-        
+
     ## this one handeles key presses
     def on_key_press(self, symbol, modifiers):
         if self.state == GameState.PLAYING:
@@ -413,10 +450,28 @@ class GameWindow(pyglet.window.Window):
             self.player.dt_update.text = f"Update FPS: {fps:.1f} | dt: {dt * 1000:.2f} ms"
             ## we move the player which gives us continues movement
             self.player.move_player()
+
             if self.game_play and self.player:
                 ## ★★★ move all 4 ghosts smoothly every frame like player
                 for g in self.game_play.ghosts:
                     g.move_ghost(self.player.cell)
+
+                ## ★★★ check if any ghost touches the player
+                ## i think the game is too fast paced. needs to be slower
+                for g in self.game_play.ghosts:
+                    if g.cell == self.player.cell or (
+                        abs(g.object.x - self.player.object.x) < self.game_play.size * 0.5
+                        and abs(g.object.y - self.player.object.y) < self.game_play.size * 0.5
+                    ):
+                        ## ★★★ decrement lives counter on top right
+                        self.player.health -= 1
+                        self.player.lives_obj.text = f'lives = {self.player.health}'
+                        ## ★★★ reset player and all ghosts back to starting positions
+                        self.player.reset_position()
+                        for ghost in self.game_play.ghosts:
+                            ghost.reset_position()
+                        break
+      
             ## below i check if all the pac-gums are eaten then i move to the next lvl
             if all(value is None for value in self.player.pac_gums.values()):
                 self.lvl += 1

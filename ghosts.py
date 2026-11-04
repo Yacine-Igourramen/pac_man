@@ -30,8 +30,10 @@ class Ghost:
                     self.cell = (nr, nc)
                     break
 
+        ## remember starting corner to reset when player is touched
+        self.start_cell = self.cell
         self.cord = self.translator[self.cell]
-        ## tracks previous position and animation state like u did for player
+        ## tracks previous position and animation state like player
         self.old_cord = self.cord
         self.mid_move = False
 
@@ -75,10 +77,18 @@ class Ghost:
         if self.old_cord == self.cord:
             self.mid_move = False
 
+    ## ★★★ resets ghost back to its starting corner
+    def reset_position(self) -> None:
+        self.cell = self.start_cell
+        self.last_cell = None
+        self.mid_move = False
+        self.cord = self.translator[self.cell]
+        self.old_cord = self.cord
+        self.object.x = self.cord[0]
+        self.object.y = self.cord[1]
+
     def bfs(self, start: Tuple[int, int], target: Tuple[int, int]) -> Tuple[int, int]:
-        # already on top of the player just a safeguard for now but should 'kill' the player
-        if start == target:
-            return start
+        """obvious"""
 
         queue = deque([start])
         visited = {start}
@@ -96,7 +106,7 @@ class Ghost:
             (0, -1, 8),  # left
         ]
 
-        ## count open paths from start tile to detect dead ends
+        # count open paths from start tile to detect dead ends
         start_box = self.maze[start[0]][start[1]]
         open_ways = 0
         for dr, dc, mask in moves:
@@ -111,6 +121,7 @@ class Ghost:
             curr = queue.popleft()
             if curr == target:
                 found = True
+
                 break
             # row anc collumn pair
             r, c = curr

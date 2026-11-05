@@ -19,6 +19,7 @@ class GameState(Enum):
     MENU = auto()
     PLAYING = auto()
     PAUSE = auto()
+    WIN = auto()
     GAME_OVER = auto()
 
 ## the maze stuff
@@ -277,7 +278,7 @@ class menu_screen():
 
 
 class Pause_screen():
-    def __init__(self,screen_w, screen_h):
+    def __init__(self, screen_w, screen_h):
         self.pause_batch = pyglet.graphics.Batch()
         self.assets = []
         self.assets.append(pyglet.shapes.Rectangle(x=0, y=0, width=screen_w, height=screen_h, color=(0, 0, 0), batch=self.pause_batch))
@@ -288,6 +289,25 @@ class Pause_screen():
         self.assets.append(pyglet.text.Label(text=f'press R to restart', font_name=None, font_size=20, color=(255, 255, 255, 255),x=screen_w/2-100,y=screen_h//2-50,width=None,height=None,anchor_x='left',anchor_y='baseline',align='left',multiline=False,batch=self.pause_batch))
         self.assets.append(pyglet.text.Label(text=f'press ESCAPE to exit', font_name=None, font_size=20, color=(255, 255, 255, 255),x=screen_w/2-100,y=screen_h//2-100,width=None,height=None,anchor_x='left',anchor_y='baseline',align='left',multiline=False,batch=self.pause_batch))
 
+
+class Win_screen():
+    def __init__(self, screen_w, screen_h):
+        self.win_batch = pyglet.graphics.Batch()
+        self.assets = []
+        self.assets.append(pyglet.shapes.Rectangle(x=0, y=0, width=screen_w, height=screen_h, color=(0, 0, 0), batch=self.win_batch))
+        self.assets.append(pyglet.text.Label(text=f'you won', font_name=None,font_size=50, color=(255, 255, 255, 255),x=screen_w/2-150,y=screen_h//2+50,width=None,height=None,anchor_x='left',anchor_y='baseline',align='left',multiline=False,batch=self.win_batch))
+        self.player_name = ""
+        self.assets.append(pyglet.text.Label(text=f'enter your name', font_name=None,font_size=20, color=(255, 255, 255, 255),x=screen_w/2-100,y=screen_h//2,width=None,height=None,anchor_x='left',anchor_y='baseline',align='left',multiline=False,batch=self.win_batch))
+        self.name_label = pyglet.text.Label(
+                            self.player_name,
+                            x=screen_w/2-100, y=screen_h//2-100,
+                            anchor_x="center",
+                            batch=self.win_batch,
+                        )
+
+    def on_text(self, text):
+        self.player_name += text
+        self.name_label.text = self.player_name
 
 ## this is the window class
 class GameWindow(pyglet.window.Window):
@@ -300,6 +320,7 @@ class GameWindow(pyglet.window.Window):
         self.game_play = None ## this is the maze class
         self.menu = menu_screen(info[0][2], info[0][3]) ## this is the menu as the name say
         self.pause = Pause_screen(info[0][2], info[0][3])
+        self.win = Win_screen(info[0][2], info[0][3])
         self.player = None ## the player exists seperately from the maze
         pyglet.clock.schedule_interval(self.update, 1/(info[0][1]*2.5)) ## the refresh rate 
 
@@ -320,6 +341,10 @@ class GameWindow(pyglet.window.Window):
             self.pause.pause_batch.draw()
         elif self.state == GameState.GAME_OVER:
             self.draw_game_over()
+
+    def on_text(self, text):
+        if self.state == GameState.WIN:
+            self.win_screen.on_text(text)
         
     ## this one handeles key presses
     def on_key_press(self, symbol, modifiers):
@@ -353,6 +378,10 @@ class GameWindow(pyglet.window.Window):
                 self.state = GameState.PLAYING
             if symbol == key.ESCAPE:
                 self.state = self.close()
+        elif self.state == GameState.WIN:
+            if symbol == key.BACKSPACE:
+                self.win_screen.player_name = self.win_screen.player_name[:-1]
+                self.win_screen.name_label.text = self.win_screen.player_name
 
     ## this is the one that get's called many times a second
     def update(self, dt):

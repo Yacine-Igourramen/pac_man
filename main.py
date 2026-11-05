@@ -1,6 +1,6 @@
 import os
 import sys
-from ghosts import Ghost, ghost
+from ghosts import Ghost
 
 maze_gen_path = os.path.join(os.path.dirname(__file__), "mazegenerator-00001", "mazegenerator-2.1.0-py3-none-any")
 if os.path.exists(maze_gen_path) and maze_gen_path not in sys.path:
@@ -218,9 +218,8 @@ class player():
         self.object.scale = maze.size / self.resting_stances["down"].width
         self.object.x = self.cord[0]
         self.object.y = self.cord[1]
-        ## ★★★ update lives indicator position for new maze
-        self.lives_obj.x = maze.width - 20
-        self.lives_obj.y = 900
+        ## ★★★ update lives indicator position for new maze 
+        ## why tho?
         self.update_animation(moving=False)
 
     # this function used to be long

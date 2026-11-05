@@ -55,7 +55,7 @@ class Ghost:
 
     ## moves the ghost smoothly on screen by distance pixels like player
     def move(self) -> None:
-        distance = 2
+        distance = 1
 
         x = self.old_cord[0]
         y = self.old_cord[1]
@@ -163,8 +163,5 @@ class Ghost:
             self.cell = nxt_cell
             self.set_cord()
             self.mid_move = True
-
-
-ghost = Ghost
 
 # i will add different algos for all 4 of them so each does a diff job

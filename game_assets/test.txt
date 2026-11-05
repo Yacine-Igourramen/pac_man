@@ -1,0 +1,2 @@
+this is where ill put all game assets i dont wanna deal with the path fixing and
+and grouping of them rn

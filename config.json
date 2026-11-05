@@ -21,15 +21,6 @@
 
   # array of level sizes
   "levels": [
-    { "width": 7, "height": 7 },
-    { "width": 30, "height": 10 },
-    { "width": 20, "height": 21 },
-    { "width": 21, "height": 23 },
-    { "width": 23, "height": 23 },
-    { "width": 23, "height": 25 },
-    { "width": 25, "height": 25 },
-    { "width": 27, "height": 27 },
-    { "width": 29, "height": 29 },
-    { "width": 31, "height": 31 }
+    { "width": 7, "height": 7}
   ]
 }

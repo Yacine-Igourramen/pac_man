@@ -86,7 +86,7 @@ class maze_assets():
                     self.objects.append(pyglet.shapes.Line(i*size+w_start, c*size+h_start, i*size+w_start, c*size+h_start+size, color=(255, 255, 255, 255), batch=self.main_batch, group=self.maze_group, thickness=7))
                 ## here we fill the pac-gums dictionary
                 if cell != 15:
-                    self.pac_gums[(c, i)] = pyglet.shapes.Circle((w_start+i*size)+size//2, (h_start+c*size)+size//2, size//14, color=(25, 255, 25, 255), batch=self.main_batch, group=self.maze_group)    
+                    self.pac_gums[(c, i)] = pyglet.shapes.Circle((w_start+i*size)+size//2, (h_start+c*size)+size//2, size//14, color=(255, 25, 25, 255), batch=self.main_batch, group=self.maze_group)    
 
 
 ## the player object that hold all the data the player needs to function

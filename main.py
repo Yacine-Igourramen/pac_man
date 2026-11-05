@@ -441,7 +441,7 @@ class GameWindow(pyglet.window.Window):
                 if file_path.exists():
                     with open(file_path, "r") as file:
                         data = json.load(file)
-                else:
+                else:  ## this part still needs a check if the file is a valid .json
                     data = []
                 data.append({self.win.player_name: self.player.score})
                 with open(file_path, "w") as file:

@@ -1,5 +1,5 @@
 run:
-	uv run python3 main.py config.json
+	uv run python3 src config.json
 
 install:
 	uv sync

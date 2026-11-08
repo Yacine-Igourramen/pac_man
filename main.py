@@ -63,14 +63,14 @@ class maze_assets():
         ## ★★★ 4 ghosts in each corner
         ghost_configs = [
             ((h_cells - 1, 0), (255, 0, 0, 255)),            ## ★★★ top left
-            ((h_cells - 1, w_cells - 1), (255, 184, 255, 255)),  ## ★★★ top right
-            ((0, 0), (0, 255, 255, 255)),                    ## ★★★ bottom left
-            ((0, w_cells - 1), (255, 184, 82, 255)),         ## ★★★ bottom rright
+            # ((h_cells - 1, w_cells - 1), (255, 184, 255, 255)),  ## ★★★ top right
+            # ((0, 0), (0, 255, 255, 255)),                    ## ★★★ bottom left
+            # ((0, w_cells - 1), (255, 184, 82, 255)),         ## ★★★ bottom rright
         ]
         ## ★★★ list holding all 4 ghosts
         self.ghosts = []
-        # for corner, color in ghost_configs:
-        #     self.ghosts.append(Ghost(corner, self.translator, maze, size, self.main_batch, color=color, group=self.ghost_group))
+        for corner, color in ghost_configs:
+            self.ghosts.append(Ghost(corner, self.translator, maze, size, self.main_batch, color=color, group=self.ghost_group))
         for cord in self.translator.values():
             ## we use the same player coordinates to fill the floor of the cell
             self.objects.append(pyglet.sprite.Sprite(image, x=cord[0], y=cord[1], batch=self.main_batch, group=self.floor_group))
@@ -81,13 +81,13 @@ class maze_assets():
             for i, cell in enumerate(line):
                 ## just checking the bit and drawing the wall based on the size
                 if cell & 1 :
-                    self.objects.append(pyglet.shapes.Line(i*size+w_start, c*size+h_start+size, i*size+w_start+size, c*size+h_start+size, color=(255, 255, 255, 255), batch=self.main_batch, group=self.maze_group, thickness=7))
+                    self.objects.append(pyglet.shapes.Line(i*size+w_start, c*size+h_start+size, i*size+w_start+size, c*size+h_start+size, color=(255, 255, 255, 255), batch=self.main_batch, group=self.maze_group, thickness=40))
                 if cell & 2 :
-                    self.objects.append(pyglet.shapes.Line(i*size+w_start+size, c*size+h_start+size, i*size+w_start+size, c*size+h_start, color=(255, 255, 255, 255), batch=self.main_batch, group=self.maze_group, thickness=7))
+                    self.objects.append(pyglet.shapes.Line(i*size+w_start+size, c*size+h_start+size, i*size+w_start+size, c*size+h_start, color=(255, 255, 255, 255), batch=self.main_batch, group=self.maze_group, thickness=40))
                 if cell & 4 :
-                    self.objects.append(pyglet.shapes.Line(i*size+w_start, c*size+h_start, i*size+w_start+size, c*size+h_start, color=(255, 255, 255, 255), batch=self.main_batch, group=self.maze_group, thickness=7))
+                    self.objects.append(pyglet.shapes.Line(i*size+w_start, c*size+h_start, i*size+w_start+size, c*size+h_start, color=(255, 255, 255, 255), batch=self.main_batch, group=self.maze_group, thickness=40))
                 if cell & 8 :
-                    self.objects.append(pyglet.shapes.Line(i*size+w_start, c*size+h_start, i*size+w_start, c*size+h_start+size, color=(255, 255, 255, 255), batch=self.main_batch, group=self.maze_group, thickness=7))
+                    self.objects.append(pyglet.shapes.Line(i*size+w_start, c*size+h_start, i*size+w_start, c*size+h_start+size, color=(255, 255, 255, 255), batch=self.main_batch, group=self.maze_group, thickness=40))
                 ## here we fill the pac-gums dictionary
                 if cell != 15:
                     self.pac_gums[(c, i)] = pyglet.shapes.Circle((w_start+i*size)+size//2, (h_start+c*size)+size//2, size//14, color=(255, 25, 25, 255), batch=self.main_batch, group=self.maze_group)    

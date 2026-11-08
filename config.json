@@ -21,6 +21,6 @@
 
   # array of level sizes
   "levels": [
-    { "width": 9, "height": 9}
+    { "width": 12, "height": 12}
   ]
 }

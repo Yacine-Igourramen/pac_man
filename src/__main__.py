@@ -100,14 +100,14 @@ class GameWindow(pyglet.window.Window):
                             ghost.reset_position()
                         break
             if self.player.health == 0:
-                self.lose.update_score(self.player.score)
+                self.lose.update_score(self.player.score + self.player.lvl_score)
                 self.state = GameState.GAME_OVER
                 return
             ## below i check if all the pac-gums are eaten then i move to the next lvl
             if all(value is None for value in self.player.pac_gums.values()):
                 self.lvl += 1
                 if self.lvl == self.lvls_count:
-                    self.win.update_score(self.player.score)
+                    self.win.update_score(self.player.score + self.player.lvl_score)
                     self.state = GameState.WIN
                     return
                 if self.lvl < len(self.info):

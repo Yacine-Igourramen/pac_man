@@ -39,7 +39,8 @@ class Pause_screen():
             parent.state = GameState.PLAYING
         if symbol == key.R:
             parent.game_play = maze_assets(parent.info[0][0], parent.info[0][1], parent.info[0][2], parent.info[0][3], parent.number_of_gum)
-            parent.player = player(parent.health, maze=parent.game_play, costs=[parent.pac_gum_cost, parent.super_pac_gum_cost, parent.ghost_cost])
+            parent.player.lvl_score = 0
+            parent.player.change_maze(parent.game_play)
             parent.state = GameState.PLAYING
         if symbol == key.ESCAPE:
             parent.game_play = None

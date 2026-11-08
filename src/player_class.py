@@ -22,6 +22,7 @@ class player():
         self.cord = self.translator[self.cell] ## we're translating the cell we set a 2 lines ago to screen coordinates (look above)
         self.old_cord = (0, 0) ## this is used during movement read the move() function for more info
         self.score = 0 ## looks like the score
+        self.lvl_score = 0
         self.mid_move = False ## a flag to know if we reached the wanted cell or not yet
         self.cost_per_gum = costs[0]
         self.cost_per_super_gum = costs[1]
@@ -106,8 +107,11 @@ class player():
         self.object.scale = maze.size / self.resting_stances["down"].width
         self.object.x = self.cord[0]
         self.object.y = self.cord[1]
+        self.score += self.lvl_score
+        self.lvl_score = 0
         ## ★★★ update lives indicator position for new maze 
         ## why tho?
+        self.score_obj.text = f"score = {self.score+self.lvl_score}"
         self.update_animation(moving=False)
 
     # this function used to be long
@@ -165,8 +169,8 @@ class player():
         if self.old_cord == self.cord:
             self.mid_move = False
             if self.pac_gums[self.cell] is not None:
-                self.score += self.cost_per_gum
-                self.score_obj.text = f"score = {self.score}"
+                self.lvl_score += self.cost_per_gum
+                self.score_obj.text = f"score = {self.score+self.lvl_score}"
                 self.pac_gums[self.cell].delete()
                 self.pac_gums[self.cell] = None
                 self.maze[self.cell[0]][self.cell[1]] = self.maze[self.cell[0]][self.cell[1]] ^ 16

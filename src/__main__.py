@@ -27,14 +27,13 @@ class GameWindow(pyglet.window.Window):
         self.ghost_cost = conf.points_per_ghost
         self.super_pac_gum_cost = conf.points_per_super_pacgum
         self.number_of_gum = conf.pacgum
-        self.leaderboard = leaderboard
         self.health = conf.lives
         self.game_play = None ## this is the maze class
         self.menu = menu_screen(info[0][2], info[0][3]) ## this is the menu as the name say
         self.pause = Pause_screen(info[0][2], info[0][3])
         self.win = Win_screen(info[0][2], info[0][3])
         self.lose = lose_screen(info[0][2], info[0][3])
-        self.leaderboard = leaderboard_screen(info[0][2], info[0][3])
+        self.leaderboard = leaderboard_screen(info[0][2], info[0][3], leaderboard)
         self.player = None ## the player exists seperately from the maze
         self.ghost_timer = 0.0 ## ★★★ added this pretty self explanatory
         self.lvls_count = len(conf.levels)

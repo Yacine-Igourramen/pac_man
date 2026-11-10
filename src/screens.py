@@ -244,5 +244,6 @@ class lose_screen():
 
 class leaderboard_screen():
     def __init__(self, screen_w, screen_h, data):
-        self.data = data
+        self.data = sorted(data, key=lambda x: list(x.values())[0], reverse=True)
+
         print(data)

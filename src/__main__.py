@@ -2,19 +2,21 @@ import os
 import sys
 from ghosts import Ghost
 from mazegenerator import MazeGenerator
+from pathlib import Path
 import pyglet
 from pyglet import shapes
 from pyglet.math import Mat4
 from pyglet.window import key
 from parser import parser, Config
+import json
 import time
-from screens import menu_screen, Pause_screen, Win_screen, lose_screen, GameState
+from screens import menu_screen, Pause_screen, Win_screen, lose_screen, GameState, leaderboard_screen
 from maze import maze_assets
 
 # i put ★★★ in front of my comments so theyre easier for u to find and read 👍🏿
 ## this is the window class
 class GameWindow(pyglet.window.Window):
-    def __init__(self, info, conf):
+    def __init__(self, info, conf, leaderboard):
         super().__init__(fullscreen=True, vsync=False)
         self.state = GameState.MENU
         self.info = info
@@ -25,12 +27,14 @@ class GameWindow(pyglet.window.Window):
         self.ghost_cost = conf.points_per_ghost
         self.super_pac_gum_cost = conf.points_per_super_pacgum
         self.number_of_gum = conf.pacgum
+        self.leaderboard = leaderboard
         self.health = conf.lives
         self.game_play = None ## this is the maze class
         self.menu = menu_screen(info[0][2], info[0][3]) ## this is the menu as the name say
         self.pause = Pause_screen(info[0][2], info[0][3])
         self.win = Win_screen(info[0][2], info[0][3])
         self.lose = lose_screen(info[0][2], info[0][3])
+        self.leaderboard = leaderboard_screen(info[0][2], info[0][3])
         self.player = None ## the player exists seperately from the maze
         self.ghost_timer = 0.0 ## ★★★ added this pretty self explanatory
         self.lvls_count = len(conf.levels)
@@ -52,7 +56,8 @@ class GameWindow(pyglet.window.Window):
             self.win.win_batch.draw()
         elif self.state == GameState.GAME_OVER:
             self.lose.lose_batch.draw()
-
+        elif self.state == GameState.LEADER_BOARD:
+            self.leaderboard.draw()
     def on_text(self, text):
         if self.state == GameState.WIN:
             self.win.on_text(text)
@@ -68,10 +73,17 @@ class GameWindow(pyglet.window.Window):
         elif self.state == GameState.MENU:
             self.menu.on_key_press(symbol, modifiers, self)
         elif self.state == GameState.WIN :
-            self.win.on_key_press(symbol, modifiers, self)
+            self.win.on_key_press(symbol, modifiers, self, self.leaderboard)
         elif self.state == GameState.GAME_OVER :
-            self.lose.on_key_press(symbol, modifiers, self)
-        
+            self.lose.on_key_press(symbol, modifiers, self, self.leaderboard)
+    
+    def on_mouse_motion(self, x, y, dx, dy):
+        if self.state == GameState.MENU:
+            self.menu.on_mouse_motion(x, y, dx, dy)
+
+    def on_mouse_press(self, x, y, button, modifiers):
+        if self.state == GameState.MENU:
+            self.menu.on_mouse_press(x, y, button, modifiers)
 
     ## this is the one that get's called many times a second
     def update(self, dt):
@@ -149,12 +161,18 @@ def main():
             mazes[-1].generate(conf.seed)
         else:
             mazes[-1].generate()
+    file_path = Path(__file__).parent.parent / conf.highscore_filename
+    if file_path.exists() and file_path.stat().st_size > 0:
+        with open(file_path, "r") as file:
+            data = json.load(file)
+    else:  ## this part still needs a check if the file is a valid .json
+        data = []
     info = []
     ## we fill info with the data each maze needs
     for i in mazes:
         info.append(size_detector(i.maze))
     ## we make the window
-    win = GameWindow(info, conf)
+    win = GameWindow(info, conf, data)
 
     pyglet.app.run()
 

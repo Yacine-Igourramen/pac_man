@@ -13,6 +13,7 @@ class GameState(Enum):
     PAUSE = auto()
     WIN = auto()
     GAME_OVER = auto()
+    LEADER_BOARD = auto()
 
 ## the maze stuff
 class maze_assets():

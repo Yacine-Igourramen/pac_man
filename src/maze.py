@@ -54,10 +54,10 @@ class maze_assets():
         randomiser = randomiser[:num_pac_gum]
         ## ★★★ 4 ghosts in each corner
         ghost_configs = [
-            # ((h_cells - 1, 0), (255, 0, 0, 255)),            ## ★★★ top left
-            # ((h_cells - 1, w_cells - 1), (255, 184, 255, 255)),  ## ★★★ top right
-            # ((0, 0), (0, 255, 255, 255)),                    ## ★★★ bottom left
-            # ((0, w_cells - 1), (255, 184, 82, 255)),         ## ★★★ bottom rright
+            ((h_cells - 1, 0), (255, 0, 0, 255)),            ## ★★★ top left
+            ((h_cells - 1, w_cells - 1), (255, 184, 255, 255)),  ## ★★★ top right
+            ((0, 0), (0, 255, 255, 255)),                    ## ★★★ bottom left
+            ((0, w_cells - 1), (255, 184, 82, 255)),         ## ★★★ bottom rright
         ]
         ## ★★★ list holding all 4 ghosts
         self.ghosts = []

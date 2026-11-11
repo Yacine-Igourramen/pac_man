@@ -22,9 +22,9 @@ class menu_screen():
         self.menu_batch = pyglet.graphics.Batch()
         self.selected = None
         start_button = pyglet.shapes.Rectangle(
-            x=(screen_w - 300) / 2,
+            x=(screen_w - screen_w//6) / 2,
             y=(screen_h - 50) // 1.9,
-            width=300,
+            width=screen_w//6,
             height=50,
             color=(50, 100, 200),
             batch=self.menu_batch
@@ -102,19 +102,32 @@ class menu_screen():
                 i.button.color =  (50, 100, 200)
             self.selected.button.color = (100, 150, 255)
         if symbol == key.ENTER:
-            if self.selected.name == "start":
-                parent.game_play = maze_assets(parent.info[0][0], parent.info[0][1], parent.info[0][2], parent.info[0][3], parent.number_of_gum)
-                parent.player = player(parent.health, maze=parent.game_play, costs=[parent.pac_gum_cost, parent.super_pac_gum_cost, parent.ghost_cost])
-                parent.state = GameState.PLAYING
-            if self.selected.name == "exit":
-                parent.state = parent.close()
-            if self.selected.name == "leaderboard":
-                parent.state = GameState.LEADER_BOARD
+            if self.selected is not None:
+                if self.selected.name == "start":
+                    parent.game_play = maze_assets(parent.info[0][0], parent.info[0][1], parent.info[0][2], parent.info[0][3], parent.number_of_gum)
+                    parent.player = player(parent.health, maze=parent.game_play, costs=[parent.pac_gum_cost, parent.super_pac_gum_cost, parent.ghost_cost])
+                    parent.state = GameState.PLAYING
+                elif self.selected.name == "exit":
+                    parent.state = parent.close()
+                elif self.selected.name == "leaderboard":
+                    parent.state = GameState.LEADER_BOARD
         if symbol == key.ESCAPE:
             parent.state = parent.close()
 
-    def on_mouse_press(self, x, y, button, modifiers):
-        pass
+    def on_mouse_press(self, x, y, button, modifiers, parent):
+        if (self.exit_button.button.x <= x <= self.exit_button.button.x + self.exit_button.button.width and
+            self.exit_button.button.y <= y <= self.exit_button.button.y + self.exit_button.button.height):
+            parent.close()
+
+        if (self.start_button.button.x <= x <= self.start_button.button.x + self.start_button.button.width and
+            self.start_button.button.y <= y <= self.start_button.button.y + self.start_button.button.height):
+            parent.game_play = maze_assets(parent.info[0][0], parent.info[0][1], parent.info[0][2], parent.info[0][3], parent.number_of_gum)
+            parent.player = player(parent.health, maze=parent.game_play, costs=[parent.pac_gum_cost, parent.super_pac_gum_cost, parent.ghost_cost])
+            parent.state = GameState.PLAYING
+        
+        if (self.leaderboard_button.button.x <= x <= self.leaderboard_button.button.x + self.leaderboard_button.button.width and
+            self.leaderboard_button.button.y <= y <= self.leaderboard_button.button.y + self.leaderboard_button.button.height):
+            parent.state = GameState.LEADER_BOARD
 
     def on_mouse_motion(self, x, y, dx, dy):
         if (self.exit_button.button.x <= x <= self.exit_button.button.x + self.exit_button.button.width and
@@ -228,7 +241,7 @@ class lose_screen():
     def on_text(self, text):
         self.player_name += text
         self.name_label.text = self.player_name
-    def on_key_press(self, symbol, modifiers, parent,):
+    def on_key_press(self, symbol, modifiers, parent, data):
         if symbol == key.BACKSPACE:
             self.player_name = parent.lose.player_name[:-1]
             self.name_label.text = self.player_name
@@ -245,5 +258,65 @@ class lose_screen():
 class leaderboard_screen():
     def __init__(self, screen_w, screen_h, data):
         self.data = sorted(data, key=lambda x: list(x.values())[0], reverse=True)
+        self.lead_batch = pyglet.graphics.Batch()
+        print(self.data)
+        cell_size = (screen_h-300)//10
+        self.obj = []
+        offset = 0
+        for i, score in enumerate(self.data):
+            shape = pyglet.shapes.Rectangle(
+                        x=(screen_w - screen_w//3) / 2,
+                        y=(screen_h-100) - offset,
+                        width=screen_w//3,
+                        height=cell_size,
+                        color=(150, 100, 250),
+                        batch=self.lead_batch
+                    )
+            self.obj.append(shape)
+            self.obj.append(pyglet.text.Label(
+                            f"{list(score.keys())[0]} : {list(score.values())[0]}",
+                            x=shape.x + shape.width / 2,
+                            y=shape.y + shape.height / 2,
+                            font_size= (screen_h + screen_w)//100,
+                            anchor_x="center",
+                            anchor_y="center",
+                            batch=self.lead_batch
+                            ))
+            offset += cell_size + 10
+        exit_button = pyglet.shapes.Rectangle(
+                            x=screen_w // 100,
+                            y=screen_h//100,
+                            width=screen_w//10,
+                            height=screen_h//8,
+                            color=(250, 100, 250),
+                            batch=self.lead_batch
+                        )
+        exit_label = pyglet.text.Label(
+                        f"MENU",
+                        x=exit_button.x + exit_button.width / 2,
+                        y=exit_button.y + exit_button.height / 2,
+                        font_size= (screen_h + screen_w)//100,
+                        anchor_x="center",
+                        anchor_y="center",
+                        batch=self.lead_batch
+                    )
+        self.exit_button = button("menu", exit_button, exit_label)
 
-        print(data)
+    def on_mouse_motion(self, x, y, dx, dy):
+        if (self.exit_button.button.x <= x <= self.exit_button.button.x + self.exit_button.button.width and
+            self.exit_button.button.y <= y <= self.exit_button.button.y + self.exit_button.button.height):
+
+            self.exit_button.button.color = (250, 100, 250)
+        else:
+            self.exit_button.button.color = (200, 50, 200)
+
+    def on_mouse_press(self, x, y, button, modifiers, parent):
+        if (self.exit_button.button.x <= x <= self.exit_button.button.x + self.exit_button.button.width and
+            self.exit_button.button.y <= y <= self.exit_button.button.y + self.exit_button.button.height):
+            parent.game_play = None
+            parent.state = GameState.MENU
+
+    def on_key_press(self, symbol, modifiers, parent):
+        if symbol == key.ESCAPE:
+            parent.game_play = None
+            parent.state = GameState.MENU

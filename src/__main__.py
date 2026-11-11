@@ -27,6 +27,7 @@ class GameWindow(pyglet.window.Window):
         self.ghost_cost = conf.points_per_ghost
         self.super_pac_gum_cost = conf.points_per_super_pacgum
         self.number_of_gum = conf.pacgum
+        self.data = leaderboard
         self.health = conf.lives
         self.game_play = None ## this is the maze class
         self.menu = menu_screen(info[0][2], info[0][3]) ## this is the menu as the name say
@@ -37,7 +38,7 @@ class GameWindow(pyglet.window.Window):
         self.player = None ## the player exists seperately from the maze
         self.ghost_timer = 0.0 ## ★★★ added this pretty self explanatory
         self.lvls_count = len(conf.levels)
-        pyglet.clock.schedule_interval(self.update, 1/(info[0][1]*2.5)) ## the refresh rate 
+        pyglet.clock.schedule_interval(self.update, 1/(info[0][1]*2)) ## the refresh rate 
 
     ## the function that writes to the window with its 3 options
     def on_draw(self):
@@ -56,7 +57,7 @@ class GameWindow(pyglet.window.Window):
         elif self.state == GameState.GAME_OVER:
             self.lose.lose_batch.draw()
         elif self.state == GameState.LEADER_BOARD:
-            self.leaderboard.draw()
+            self.leaderboard.lead_batch.draw()
     def on_text(self, text):
         if self.state == GameState.WIN:
             self.win.on_text(text)
@@ -72,17 +73,23 @@ class GameWindow(pyglet.window.Window):
         elif self.state == GameState.MENU:
             self.menu.on_key_press(symbol, modifiers, self)
         elif self.state == GameState.WIN :
-            self.win.on_key_press(symbol, modifiers, self, self.leaderboard)
+            self.win.on_key_press(symbol, modifiers, self, self.data)
         elif self.state == GameState.GAME_OVER :
-            self.lose.on_key_press(symbol, modifiers, self, self.leaderboard)
+            self.lose.on_key_press(symbol, modifiers, self, self.data)
+        elif self.state == GameState.LEADER_BOARD :
+            self.leaderboard.on_key_press(symbol, modifiers, self)
     
     def on_mouse_motion(self, x, y, dx, dy):
         if self.state == GameState.MENU:
             self.menu.on_mouse_motion(x, y, dx, dy)
+        if self.state == GameState.LEADER_BOARD:
+            self.leaderboard.on_mouse_motion(x, y, dx, dy)
 
     def on_mouse_press(self, x, y, button, modifiers):
         if self.state == GameState.MENU:
-            self.menu.on_mouse_press(x, y, button, modifiers)
+            self.menu.on_mouse_press(x, y, button, modifiers, self)
+        if self.state == GameState.LEADER_BOARD:
+            self.leaderboard.on_mouse_press(x, y, button, modifiers, self)
 
     ## this is the one that get's called many times a second
     def update(self, dt):

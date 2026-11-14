@@ -41,6 +41,8 @@ class maze_assets():
         image = pyglet.image.load(image_path)
         rupee_path = os.path.join(os.path.dirname(__file__), "pacgum_rupee.png")
         rupee_image = pyglet.image.load(rupee_path)
+        rupee_offset_x = (size - rupee_image.width) // 2
+        rupee_offset_y = (size - rupee_image.height) // 2
         ## a lot of calculations are happening below
         w_cells = len(maze[0])
         h_cells = len(maze)
@@ -103,8 +105,14 @@ class maze_assets():
                 if (c, i) in self.super_pac_gums:
                     self.pac_gums[(c, i)] = pyglet.shapes.Circle((w_start+i*size)+size//2, (h_start+c*size)+size//2, size//5, color=(255, 184, 82, 255), batch=self.main_batch, group=self.maze_group)
                 elif (c, i) in randomiser:
-                    sp = pyglet.sprite.Sprite(rupee_image, x=w_start+i*size, y=h_start+c*size, batch=self.main_batch, group=self.maze_group)
-                    sp.scale = size / rupee_image.width
+                    sp = pyglet.sprite.Sprite(
+                        rupee_image,
+                        x=w_start + i * size + rupee_offset_x,
+                        y=h_start + c * size + rupee_offset_y,
+                        batch=self.main_batch,
+                        group=self.maze_group,
+                    )
+                    sp.scale = 1.0
                     self.pac_gums[(c, i)] = sp
                 else:
                     self.pac_gums[(c, i)] = None

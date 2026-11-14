@@ -36,7 +36,7 @@ class GameWindow(pyglet.window.Window):
         self.lose = lose_screen(info[0][2], info[0][3])
         self.leaderboard = leaderboard_screen(info[0][2], info[0][3], leaderboard)
         self.player = None ## the player exists seperately from the maze
-        self.ghost_timer = 0.0 ## ★★★ added this pretty self explanatory
+        self.collision_threshold = 30 ## ★★★ sensitivity for ghost player contact, higher = more sensitive
         self.lvls_count = len(conf.levels)
         pyglet.clock.schedule_interval(self.update, 1/(info[0][1]*2)) ## the refresh rate 
 
@@ -47,10 +47,22 @@ class GameWindow(pyglet.window.Window):
             self.menu.menu_batch.draw()
         elif self.state == GameState.PLAYING:
             self.game_play.main_batch.draw()
-            self.player.batch.draw()
+            ## ★★★ draw ghosts behind player during supergum or on top during regular targeting
+            if self.player.super_timer > 0:
+                self.game_play.ghost_batch.draw()
+                self.player.batch.draw()
+            else:
+                self.player.batch.draw()
+                self.game_play.ghost_batch.draw()
         elif self.state == GameState.PAUSE:
             self.game_play.main_batch.draw()
-            self.player.batch.draw()
+            ## ★★★ draw ghosts behind player during supergum or on top during regular targeting
+            if self.player.super_timer > 0:
+                self.game_play.ghost_batch.draw()
+                self.player.batch.draw()
+            else:
+                self.player.batch.draw()
+                self.game_play.ghost_batch.draw()
             self.pause.pause_batch.draw()
         elif self.state == GameState.WIN:
             self.win.win_batch.draw()
@@ -94,29 +106,53 @@ class GameWindow(pyglet.window.Window):
     ## this is the one that get's called many times a second
     def update(self, dt):
         if self.state == GameState.PLAYING:
+            ## ★★★ update super pacgum timer as in how much it lasts
+            if self.player.super_timer > 0:
+                self.player.super_timer = max(0.0, self.player.super_timer - dt)
+
             ## we move the player which gives us continues movement
             self.player.move_player()
 
             if self.game_play and self.player:
-                ## ★★★ move all 4 ghosts smoothly every frame like player
+                ## ★★★ updating ghoost respawn cooldowns 
                 for g in self.game_play.ghosts:
-                    g.move_ghost(self.player.cell)
+                    if g.cooldown_timer > 0:
+                        g.cooldown_timer = max(0.0, g.cooldown_timer - dt)
+
+                ## ★★★ move all 4 ghosts smoothly every frame like player
+                red_cell = self.game_play.ghosts[0].cell if self.game_play.ghosts else self.player.cell
+                is_scared = self.player.super_timer > 0
+                for g in self.game_play.ghosts:
+                    g.move_ghost(self.player.cell, red_cell=red_cell, scared=is_scared)
 
                 ## ★★★ check if any ghost touches the player
                 ## i think the game is too fast paced. needs to be slower
+                player_cx = self.player.object.x + self.player.object.width / 2
+                player_cy = self.player.object.y + self.player.object.height / 2
                 for g in self.game_play.ghosts:
-                    if g.cell == self.player.cell or (
-                        abs(g.object.x - self.player.object.x) < self.game_play.size * 0.5
-                        and abs(g.object.y - self.player.object.y) < self.game_play.size * 0.5
+                    if g.cooldown_timer > 0:
+                        continue
+                    ghost_cx = g.object.x + g.object.width / 2
+                    ghost_cy = g.object.y + g.object.height / 2
+                    if (
+                        abs(ghost_cx - player_cx) < self.collision_threshold
+                        and abs(ghost_cy - player_cy) < self.collision_threshold
                     ):
-                        ## ★★★ decrement lives counter on top right
-                        self.player.health -= 1
-                        self.player.lives_obj.text = f'lives = {self.player.health}'
-                        ## ★★★ reset player and all ghosts back to starting positions
-                        self.player.reset_position()
-                        for ghost in self.game_play.ghosts:
-                            ghost.reset_position()
-                        break
+                        if is_scared:
+                            ## ★★★ eat ghost during super pacgum mode
+                            self.player.lvl_score += self.player.cost_per_ghost
+                            self.player.score_obj.text = f'score = {self.player.score + self.player.lvl_score}'
+                            g.reset_position()
+                            g.cooldown_timer = g.respawn_cooldown
+                        else:
+                            ## ★★★ decrement lives counter on top right
+                            self.player.health -= 1
+                            self.player.lives_obj.text = f'lives = {self.player.health}'
+                            ## ★★★ reset player and all ghosts back to starting positions
+                            self.player.reset_position()
+                            for ghost in self.game_play.ghosts:
+                                ghost.reset_position()
+                            break
             if self.player.health == 0:
                 self.lose.update_score(self.player.score + self.player.lvl_score)
                 self.state = GameState.GAME_OVER

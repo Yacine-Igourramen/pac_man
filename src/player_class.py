@@ -3,7 +3,7 @@ from pyglet import shapes
 from pyglet.math import Mat4
 import os
 from pyglet.window import key
-from maze import GameState
+from maze import GameState, maze_assets
 
 
 ## the player object that hold all the data the player needs to function
@@ -14,6 +14,8 @@ class player():
         self.batch = pyglet.graphics.Batch() ## a batch to make rendering more effecient
         self.maze = maze.maze ## the actual maze as a double list of int
         self.pac_gums = maze.pac_gums  ## this is a dictionary that holds the coordinates and the corresponding pac_gum
+        self.super_pac_gums = set(getattr(maze, "super_pac_gums", set()))
+        self.super_timer = 0.0
         self.direction = None  ## the direction where pac_man/woman is currentely moving
         self.tmp_dir = None  ## the movement queue
         self.cell = (0, 0) ## his/her current cell
@@ -84,9 +86,10 @@ class player():
             "left": pyglet.image.Animation.from_image_sequence([grid[1, c] for c in range(4)], duration=frame_duration, loop=True),
             "right": pyglet.image.Animation.from_image_sequence([grid[0, c] for c in range(4)], duration=frame_duration, loop=True),
         }
+        self.offset = (maze.size - self.resting_stances["down"].width) // 2
         # ★★★ to start game in resting stance (front view)
-        self.object = pyglet.sprite.Sprite(self.resting_stances["down"], x=self.cord[0], y=self.cord[1], batch=self.batch)
-        self.object.scale = maze.size / self.resting_stances["down"].width
+        self.object = pyglet.sprite.Sprite(self.resting_stances["down"], x=self.cord[0] + self.offset, y=self.cord[1] + self.offset, batch=self.batch)
+        self.object.scale = 1.0
 
     def update_animation(self, moving=False):
         dir_key = self.direction if self.direction in self.animations else "down"
@@ -100,13 +103,16 @@ class player():
         self.mid_move = False
         self.maze = maze.maze ## we change the maze
         self.pac_gums = maze.pac_gums ## the pac_gums too
+        self.super_pac_gums = set(getattr(maze, "super_pac_gums", set()))
+        self.super_timer = 0.0
         self.set_player()
         self.translator = maze.translator ## the coordinates translator too
         ## u know the rest
         self.cord = self.translator[self.cell]
-        self.object.scale = maze.size / self.resting_stances["down"].width
-        self.object.x = self.cord[0]
-        self.object.y = self.cord[1]
+        self.offset = (maze.size - self.resting_stances["down"].width) // 2
+        self.object.scale = 1.0
+        self.object.x = self.cord[0] + self.offset
+        self.object.y = self.cord[1] + self.offset
         self.score += self.lvl_score
         self.lvl_score = 0
         ## ★★★ update lives indicator position for new maze 
@@ -129,17 +135,20 @@ class player():
             self.pac_gums[self.cell].delete()
             self.pac_gums[self.cell] = None
             self.maze[self.cell[0]][self.cell[1]] = self.maze[self.cell[0]][self.cell[1]] ^ 16
+            if hasattr(self, "super_pac_gums"):
+                self.super_pac_gums.discard(self.cell)
 
     ## ★★★ reseting the player to the middle after losing a life i want to add a short "cutsene" to it befor that later
     def reset_position(self):
         self.direction = None
         self.tmp_dir = None
         self.mid_move = False
+        self.super_timer = 0.0
         self.set_player()
         self.cord = self.translator[self.cell]
         self.old_cord = self.cord
-        self.object.x = self.cord[0]
-        self.object.y = self.cord[1]
+        self.object.x = self.cord[0] + self.offset
+        self.object.y = self.cord[1] + self.offset
         self.update_animation(moving=False)
 
     ## basically moves the player on the screen by the amount of pixels equal to distance
@@ -162,14 +171,19 @@ class player():
         ## this is why we save the old ones
 
         self.old_cord = (x, y)
-        self.object.x = x
-        self.object.y = y
+        self.object.x = x + self.offset
+        self.object.y = y + self.offset
 
         ## below the moment we reach the new location we check the 16th bit in the maze for the pac_gum and eat it
         if self.old_cord == self.cord:
             self.mid_move = False
             if self.pac_gums[self.cell] is not None:
-                self.lvl_score += self.cost_per_gum
+                if self.cell in self.super_pac_gums:
+                    self.lvl_score += self.cost_per_super_gum
+                    self.super_timer = 7.0
+                    self.super_pac_gums.discard(self.cell)
+                else:
+                    self.lvl_score += self.cost_per_gum
                 self.score_obj.text = f"score = {self.score+self.lvl_score}"
                 self.pac_gums[self.cell].delete()
                 self.pac_gums[self.cell] = None

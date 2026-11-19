@@ -153,7 +153,7 @@ class player():
 
     ## basically moves the player on the screen by the amount of pixels equal to distance
     def move(self):
-        distance = 2 ## how many pixels to move by each call still needs tweaking
+        distance = 1 ## how many pixels to move by each call still needs tweaking
 
         x = self.old_cord[0]
         y = self.old_cord[1] ## we save where the player used to be

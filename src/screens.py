@@ -41,9 +41,9 @@ class menu_screen():
         self.start_button = button("start", start_button, start_label)
         ##
         Exit_button = pyglet.shapes.Rectangle(
-            x=(screen_w - 300) / 2,
+            x=(screen_w - screen_w//6) / 2,
             y=(screen_h - 50) // 2.9,
-            width=300,
+            width=screen_w//6,
             height=50,
             color=(50, 100, 200),
             batch=self.menu_batch
@@ -61,9 +61,9 @@ class menu_screen():
         self.exit_button = button("exit", Exit_button, Exit_label)
         ##
         leaderboard_button = pyglet.shapes.Rectangle(
-            x=(screen_w - 300) / 2,
+            x=(screen_w - screen_w//6) / 2,
             y=(screen_h - 50) // 2.3,
-            width=300,
+            width=screen_w//6,
             height=50,
             color=(50, 100, 200),
             batch=self.menu_batch
@@ -165,10 +165,62 @@ class Pause_screen():
         self.assets.append(pyglet.shapes.Rectangle(x=0, y=0, width=screen_w, height=screen_h, color=(0, 0, 0), batch=self.pause_batch))
         self.assets[-1].opacity = 150
         self.assets.append(pyglet.shapes.Rectangle(x=screen_w//4, y=screen_h//4, width=screen_w//2, height=screen_h//2, color=(0, 0, 0), batch=self.pause_batch))
-        self.assets.append(pyglet.text.Label(text=f'paused', font_name=None,font_size=50, color=(255, 255, 255, 255),x=screen_w/2-150,y=screen_h//2+50,width=None,height=None,anchor_x='left',anchor_y='baseline',align='left',multiline=False,batch=self.pause_batch))
-        self.assets.append(pyglet.text.Label(text=f'press p to continue', font_name=None,font_size=20, color=(255, 255, 255, 255),x=screen_w/2-100,y=screen_h//2,width=None,height=None,anchor_x='left',anchor_y='baseline',align='left',multiline=False,batch=self.pause_batch))
-        self.assets.append(pyglet.text.Label(text=f'press R to restart', font_name=None, font_size=20, color=(255, 255, 255, 255),x=screen_w/2-100,y=screen_h//2-50,width=None,height=None,anchor_x='left',anchor_y='baseline',align='left',multiline=False,batch=self.pause_batch))
-        self.assets.append(pyglet.text.Label(text=f'press ESCAPE to exit', font_name=None, font_size=20, color=(255, 255, 255, 255),x=screen_w/2-100,y=screen_h//2-100,width=None,height=None,anchor_x='left',anchor_y='baseline',align='left',multiline=False,batch=self.pause_batch))
+        self.title = pyglet.text.Label(text="PAUSED", font_size=50, color=(255, 255, 255, 255), x=screen_w//2, y=screen_h//1.5, anchor_x='center', anchor_y='center', align='center', multiline=False, batch=self.pause_batch, group=None)
+        continue_button = pyglet.shapes.Rectangle(
+            x=(screen_w - screen_w//6) / 2,
+            y=(screen_h - 50) // 1.9,
+            width=screen_w//6,
+            height=50,
+            color=(50, 100, 200),
+            batch=self.pause_batch
+        )
+        continue_label = pyglet.text.Label(
+            "CONTINUE",
+            x=continue_button.x + continue_button.width / 2,
+            y=continue_button.y + continue_button.height / 2,
+            font_size= (screen_h + screen_w)//100,
+            anchor_x="center",
+            anchor_y="center",
+            batch=self.pause_batch
+        )
+        self.continue_button = button("continue", continue_button, continue_label)
+        restart_button = pyglet.shapes.Rectangle(
+            x=(screen_w - screen_w//6) / 2,
+            y=(screen_h - 50) // 2.3,
+            width=screen_w//6,
+            height=50,
+            color=(50, 100, 200),
+            batch=self.pause_batch
+        )
+        restart_label = pyglet.text.Label(
+            "RESTART",
+            x=restart_button.x + restart_button.width / 2,
+            y=restart_button.y + restart_button.height / 2,
+            font_size= (screen_h + screen_w)//100,
+            anchor_x="center",
+            anchor_y="center",
+            batch=self.pause_batch
+        )
+        self.restart_button = button("restart", restart_button, restart_label)
+        exit_button = pyglet.shapes.Rectangle(
+            x=(screen_w - screen_w//6) / 2,
+            y=(screen_h - 50) // 2.9,
+            width=screen_w//6,
+            height=50,
+            color=(50, 100, 200),
+            batch=self.pause_batch
+        )
+        exit_label = pyglet.text.Label(
+            "EXIT",
+            x=exit_button.x + exit_button.width / 2,
+            y=exit_button.y + exit_button.height / 2,
+            font_size= (screen_h + screen_w)//100,
+            anchor_x="center",
+            anchor_y="center",
+            batch=self.pause_batch
+        )
+        self.exit_button = button("exit", exit_button, exit_label)
+
     def on_key_press(self, symbol, modifiers, parent):
         if symbol == key.P:
             parent.state = GameState.PLAYING
@@ -180,6 +232,44 @@ class Pause_screen():
         if symbol == key.ESCAPE:
             parent.game_play = None
             parent.state = GameState.MENU
+    
+    def on_mouse_press(self, x, y, button, modifiers, parent):
+        if (self.exit_button.button.x <= x <= self.exit_button.button.x + self.exit_button.button.width and
+            self.exit_button.button.y <= y <= self.exit_button.button.y + self.exit_button.button.height):
+            parent.close()
+
+        if (self.continue_button.button.x <= x <= self.continue_button.button.x + self.continue_button.button.width and
+            self.continue_button.button.y <= y <= self.continue_button.button.y + self.continue_button.button.height):
+            parent.state = GameState.PLAYING
+        
+        if (self.restart_button.button.x <= x <= self.restart_button.button.x + self.restart_button.button.width and
+            self.restart_button.button.y <= y <= self.restart_button.button.y + self.restart_button.button.height):
+            parent.game_play = maze_assets(parent.info[0][0], parent.info[0][1], parent.info[0][2], parent.info[0][3], parent.number_of_gum)
+            parent.player.lvl_score = 0
+            parent.player.change_maze(parent.game_play)
+            parent.state = GameState.PLAYING
+
+    def on_mouse_motion(self, x, y, dx, dy):
+        if (self.exit_button.button.x <= x <= self.exit_button.button.x + self.exit_button.button.width and
+            self.exit_button.button.y <= y <= self.exit_button.button.y + self.exit_button.button.height):
+
+            self.exit_button.button.color = (100, 150, 255)
+        else:
+            self.exit_button.button.color = (50, 100, 200)
+
+        if (self.continue_button.button.x <= x <= self.continue_button.button.x + self.continue_button.button.width and
+            self.continue_button.button.y <= y <= self.continue_button.button.y + self.continue_button.button.height):
+
+            self.continue_button.button.color = (100, 150, 255)
+        else:
+            self.continue_button.button.color = (50, 100, 200)
+
+        if (self.restart_button.button.x <= x <= self.restart_button.button.x + self.restart_button.button.width and
+            self.restart_button.button.y <= y <= self.restart_button.button.y + self.restart_button.button.height):
+
+            self.restart_button.button.color = (100, 150, 255)
+        else:
+            self.restart_button.button.color = (50, 100, 200)
 
 
 class Win_screen():

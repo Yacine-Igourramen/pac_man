@@ -168,9 +168,9 @@ window = pyglet.window.Window(1920, 1000)
 
 maze_sheet = Sheet("maze.png", tile_map)
 
-scale = 3
+scale = 1
 
-mg = MazeGenerator((3, 3), True)
+mg = MazeGenerator((12, 6), True)
 
 maze = mg.generate()
 

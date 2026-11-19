@@ -36,7 +36,7 @@ class GameWindow(pyglet.window.Window):
         self.lose = lose_screen(info[0][2], info[0][3])
         self.leaderboard = leaderboard_screen(info[0][2], info[0][3], leaderboard)
         self.player = None ## the player exists seperately from the maze
-        self.collision_threshold = 30 ## ★★★ sensitivity for ghost player contact, higher = more sensitive
+        self.collision_threshold = 15 ## ★★★ sensitivity for ghost player contact, higher = more sensitive
         self.lvls_count = len(conf.levels)
         pyglet.clock.schedule_interval(self.update, 1/(info[0][1]*2)) ## the refresh rate 
 
@@ -94,14 +94,18 @@ class GameWindow(pyglet.window.Window):
     def on_mouse_motion(self, x, y, dx, dy):
         if self.state == GameState.MENU:
             self.menu.on_mouse_motion(x, y, dx, dy)
-        if self.state == GameState.LEADER_BOARD:
+        elif self.state == GameState.LEADER_BOARD:
             self.leaderboard.on_mouse_motion(x, y, dx, dy)
+        elif self.state == GameState.PAUSE:
+            self.pause.on_mouse_motion(x, y, dx, dy)
 
     def on_mouse_press(self, x, y, button, modifiers):
         if self.state == GameState.MENU:
             self.menu.on_mouse_press(x, y, button, modifiers, self)
-        if self.state == GameState.LEADER_BOARD:
+        elif self.state == GameState.LEADER_BOARD:
             self.leaderboard.on_mouse_press(x, y, button, modifiers, self)
+        elif self.state == GameState.PAUSE:
+            self.pause.on_mouse_press(x, y, button, modifiers, self)
 
     ## this is the one that get's called many times a second
     def update(self, dt):

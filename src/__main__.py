@@ -93,6 +93,8 @@ class GameWindow(pyglet.window.Window):
             self.lose.on_key_press(symbol, modifiers, self, self.data)
         elif self.state == GameState.LEADER_BOARD :
             self.leaderboard.on_key_press(symbol, modifiers, self)
+        elif self.state == GameState.CHARACTER_SELECT :
+            self.character_select.on_key_press(symbol, modifiers, self)
     
     def on_mouse_motion(self, x, y, dx, dy):
         if self.state == GameState.MENU:
@@ -101,6 +103,8 @@ class GameWindow(pyglet.window.Window):
             self.leaderboard.on_mouse_motion(x, y, dx, dy)
         elif self.state == GameState.PAUSE:
             self.pause.on_mouse_motion(x, y, dx, dy)
+        elif self.state == GameState.CHARACTER_SELECT:
+            self.character_select.on_mouse_motion(x, y, dx, dy)
 
     def on_mouse_press(self, x, y, button, modifiers):
         if self.state == GameState.MENU:
@@ -109,6 +113,8 @@ class GameWindow(pyglet.window.Window):
             self.leaderboard.on_mouse_press(x, y, button, modifiers, self)
         elif self.state == GameState.PAUSE:
             self.pause.on_mouse_press(x, y, button, modifiers, self)
+        elif self.state == GameState.CHARACTER_SELECT:
+            self.character_select.on_mouse_press(x, y, button, modifiers, self)
 
     ## this is the one that get's called many times a second
     def update(self, dt):

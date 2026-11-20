@@ -8,7 +8,7 @@ from maze import GameState, maze_assets
 
 ## the player object that hold all the data the player needs to function
 class player():
-    def __init__(self, health, maze: maze_assets, costs):
+    def __init__(self, health, maze: maze_assets, costs, grid):
         self.name = "pac man"  ## a name idk why i added it
         self.health = health  ## health i guess idk
         self.batch = pyglet.graphics.Batch() ## a batch to make rendering more effecient
@@ -63,10 +63,6 @@ class player():
                             batch=self.batch
                         )
         ## u changed what's below before so u know
-        image_path = os.path.join(os.path.dirname(__file__), "zelda.png")
-        sheet = pyglet.image.load(image_path)
-        grid = pyglet.image.ImageGrid(sheet, 4, 4)
-
         # ★★★ resting stances (first column for each row):
         # from toop to bottom:
         # row 1 (top, grid row 3): front view

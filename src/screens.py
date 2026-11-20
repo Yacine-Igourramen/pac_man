@@ -14,9 +14,6 @@ class button:
         self.button = button
         self.label = label
 
-    def click(self):
-        pass
-
 ## the menu screen and its 2 texts
 class menu_screen():
     def __init__(self, screen_w, screen_h):
@@ -105,9 +102,7 @@ class menu_screen():
         if symbol == key.ENTER:
             if self.selected is not None:
                 if self.selected.name == "start":
-                    parent.game_play = maze_assets(parent.info[0][0], parent.info[0][1], parent.info[0][2], parent.info[0][3], parent.number_of_gum)
-                    parent.player = player(parent.health, maze=parent.game_play, costs=[parent.pac_gum_cost, parent.super_pac_gum_cost, parent.ghost_cost])
-                    parent.state = GameState.PLAYING
+                    parent.state = GameState.CHARACTER_SELECT
                 elif self.selected.name == "exit":
                     parent.state = parent.close()
                 elif self.selected.name == "leaderboard":
@@ -122,9 +117,7 @@ class menu_screen():
 
         if (self.start_button.button.x <= x <= self.start_button.button.x + self.start_button.button.width and
             self.start_button.button.y <= y <= self.start_button.button.y + self.start_button.button.height):
-            parent.game_play = maze_assets(parent.info[0][0], parent.info[0][1], parent.info[0][2], parent.info[0][3], parent.number_of_gum)
-            parent.player = player(parent.health, maze=parent.game_play, costs=[parent.pac_gum_cost, parent.super_pac_gum_cost, parent.ghost_cost])
-            parent.state = GameState.PLAYING
+            parent.state = GameState.CHARACTER_SELECT
         
         if (self.leaderboard_button.button.x <= x <= self.leaderboard_button.button.x + self.leaderboard_button.button.width and
             self.leaderboard_button.button.y <= y <= self.leaderboard_button.button.y + self.leaderboard_button.button.height):
@@ -447,21 +440,119 @@ class leaderboard_screen():
 class character_selection:
     def __init__(self, screen_w, screen_h):
         self.char_sel_batch = pyglet.graphics.Batch()
+        self.selected = None
+        ###### first button
+        self.zelda = pyglet.shapes.Rectangle(
+            x=screen_w//4 - 250//2,
+            y=screen_h//2 - 250//2,
+            width=250,
+            height=250,
+            color = (201, 166, 144),
+            batch=self.char_sel_batch
+        )
         image_path = os.path.join(os.path.dirname(__file__), "zelda.png")
         sheet = pyglet.image.load(image_path)
-        grid = pyglet.image.ImageGrid(sheet, 4, 4)
+        self.z_grid = pyglet.image.ImageGrid(sheet, 4, 4)
         self.player1 = pyglet.sprite.Sprite(
-            grid[0],
-            x=screen_w//8,
-            y=screen_h//2,
+            self.z_grid[15],
+            x=self.zelda.x,
+            y=self.zelda.y,
+            batch=self.char_sel_batch
+        )
+        scale_x = self.zelda.width / self.player1.width
+        scale_y = self.zelda.height / self.player1.height
+
+        self.player1.scale = min(scale_x, scale_y)
+        self.zelda_button = button("zelda", self.zelda, self.player1)
+
+        ###### second button
+        self.link = pyglet.shapes.Rectangle(
+            x=screen_w - (screen_w//4) - 250//2,
+            y=screen_h//2 - 250//2,
+            width=250,
+            height=250,
+            color = (201, 166, 144),
             batch=self.char_sel_batch
         )
         image_path = os.path.join(os.path.dirname(__file__), "link.png")
         sheet = pyglet.image.load(image_path)
-        grid = pyglet.image.ImageGrid(sheet, 4, 4)
+        self.l_grid = pyglet.image.ImageGrid(sheet, 4, 4)
         self.player2 = pyglet.sprite.Sprite(
-            grid[0],
-            x=screen_w - (screen_w//8),
-            y=screen_h//2,
+            self.l_grid[15],
+            x=self.link.x,
+            y=self.link.y,
             batch=self.char_sel_batch
         )
+        # Scale to fit inside the button (90% of its dimensions)
+        scale_x = self.link.width / self.player2.width
+        scale_y = self.link.height / self.player2.height
+
+        self.player2.scale = min(scale_x, scale_y)
+        self.link_button = button("link", self.link, self.player2)
+        self.buttons = [self.link_button, self.zelda_button]
+
+    def on_key_press(self, symbol, modifiers, parent):
+        if symbol == key.D:
+            if self.selected == None:
+                self.selected = self.link_button
+            elif self.selected == self.link_button:
+                self.selected = self.zelda_button
+            elif self.selected == self.zelda_button:
+                self.selected = self.link_button
+            for i in self.buttons:
+                i.button.color =  (201, 166, 144)
+            self.selected.button.color = (201, 166, 200)
+        if symbol == key.A:
+            if self.selected == None:
+                self.selected = self.zelda_button
+            elif self.selected == self.link_button:
+                self.selected = self.zelda_button
+            elif self.selected == self.zelda_button:
+                self.selected = self.link_button
+            for i in self.buttons:
+                i.button.color =  (201, 166, 144)
+            self.selected.button.color = (201, 166, 200)
+        if symbol == key.ENTER:
+            if self.selected is not None:
+                if self.selected.name == "zelda":
+                    parent.game_play = maze_assets(parent.info[0][0], parent.info[0][1], parent.info[0][2], parent.info[0][3], parent.number_of_gum)
+                    parent.player = player(parent.health, maze=parent.game_play, costs=[parent.pac_gum_cost, parent.super_pac_gum_cost, parent.ghost_cost], grid=self.z_grid)
+                    parent.state = GameState.PLAYING
+                elif self.selected.name == "link":
+                    parent.game_play = maze_assets(parent.info[0][0], parent.info[0][1], parent.info[0][2], parent.info[0][3], parent.number_of_gum)
+                    parent.player = player(parent.health, maze=parent.game_play, costs=[parent.pac_gum_cost, parent.super_pac_gum_cost, parent.ghost_cost], grid=self.l_grid)
+                    parent.state = GameState.PLAYING
+        if symbol == key.ESCAPE:
+            parent.state = GameState.CHARACTER_SELECT
+
+    def on_mouse_press(self, x, y, button, modifiers, parent):
+        if (self.zelda.x <= x <= self.zelda.x + self.zelda.width and
+            self.zelda.y <= y <= self.zelda.y + self.zelda.height):
+            parent.game_play = maze_assets(parent.info[0][0], parent.info[0][1], parent.info[0][2], parent.info[0][3], parent.number_of_gum)
+            parent.player = player(parent.health, maze=parent.game_play, costs=[parent.pac_gum_cost, parent.super_pac_gum_cost, parent.ghost_cost], grid=self.z_grid)
+            parent.state = GameState.PLAYING
+
+        if (self.link.x <= x <= self.link.x + self.link.width and
+            self.link.y <= y <= self.link.y + self.link.height):
+            parent.game_play = maze_assets(parent.info[0][0], parent.info[0][1], parent.info[0][2], parent.info[0][3], parent.number_of_gum)
+            parent.player = player(parent.health, maze=parent.game_play, costs=[parent.pac_gum_cost, parent.super_pac_gum_cost, parent.ghost_cost], grid=self.l_grid)
+            parent.state = GameState.PLAYING
+
+    def on_mouse_motion(self, x, y, dx, dy):
+        if (self.zelda.x <= x <= self.zelda.x + self.zelda.width and
+            self.zelda.y <= y <= self.zelda.y + self.zelda.height):
+
+            self.zelda.color = (201, 166, 144)
+            self.selected = None
+        else:
+            if self.selected == None:
+                self.zelda.color = (201, 166, 120)
+
+        if (self.link.x <= x <= self.link.x + self.link.width and
+            self.link.y <= y <= self.link.y + self.link.height):
+
+            self.link.color = (201, 166, 144)
+            self.selected = None
+        else:
+            if self.selected == None:
+                self.link.color = (201, 166, 120)

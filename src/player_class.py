@@ -63,7 +63,7 @@ class player():
                             batch=self.batch
                         )
         ## u changed what's below before so u know
-        image_path = os.path.join(os.path.dirname(__file__), "player.png")
+        image_path = os.path.join(os.path.dirname(__file__), "zelda.png")
         sheet = pyglet.image.load(image_path)
         grid = pyglet.image.ImageGrid(sheet, 4, 4)
 

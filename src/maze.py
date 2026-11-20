@@ -14,6 +14,7 @@ class GameState(Enum):
     WIN = auto()
     GAME_OVER = auto()
     LEADER_BOARD = auto()
+    CHARACTER_SELECT = auto()
 
 ## the maze stuff
 class maze_assets():

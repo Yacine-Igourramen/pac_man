@@ -10,7 +10,7 @@ from pyglet.window import key
 from parser import parser, Config
 import json
 import time
-from screens import menu_screen, Pause_screen, Win_screen, lose_screen, GameState, leaderboard_screen
+from screens import menu_screen, Pause_screen, Win_screen, lose_screen, GameState, leaderboard_screen, character_selection
 from maze import maze_assets
 
 # i put ★★★ in front of my comments so theyre easier for u to find and read 👍🏿
@@ -35,6 +35,7 @@ class GameWindow(pyglet.window.Window):
         self.win = Win_screen(info[0][2], info[0][3])
         self.lose = lose_screen(info[0][2], info[0][3])
         self.leaderboard = leaderboard_screen(info[0][2], info[0][3], leaderboard)
+        self.character_select = character_selection(info[0][2], info[0][3])
         self.player = None ## the player exists seperately from the maze
         self.collision_threshold = 15 ## ★★★ sensitivity for ghost player contact, higher = more sensitive
         self.lvls_count = len(conf.levels)
@@ -70,6 +71,8 @@ class GameWindow(pyglet.window.Window):
             self.lose.lose_batch.draw()
         elif self.state == GameState.LEADER_BOARD:
             self.leaderboard.lead_batch.draw()
+        elif self.state == GameState.CHARACTER_SELECT:
+            self.character_select.char_sel_batch.draw()
     def on_text(self, text):
         if self.state == GameState.WIN:
             self.win.on_text(text)

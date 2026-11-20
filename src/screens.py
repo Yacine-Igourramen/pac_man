@@ -4,6 +4,7 @@ import json
 from maze import maze_assets, GameState
 from player_class import player
 from pathlib import Path
+import os
 from pyglet.window import mouse
 
 
@@ -161,6 +162,7 @@ class menu_screen():
 class Pause_screen():
     def __init__(self, screen_w, screen_h):
         self.pause_batch = pyglet.graphics.Batch()
+        self.selected = None
         self.assets = []
         self.assets.append(pyglet.shapes.Rectangle(x=0, y=0, width=screen_w, height=screen_h, color=(0, 0, 0), batch=self.pause_batch))
         self.assets[-1].opacity = 150
@@ -220,15 +222,39 @@ class Pause_screen():
             batch=self.pause_batch
         )
         self.exit_button = button("exit", exit_button, exit_label)
+        self.buttons = [self.exit_button, self.restart_button, self.continue_button]
 
     def on_key_press(self, symbol, modifiers, parent):
-        if symbol == key.P:
-            parent.state = GameState.PLAYING
-        if symbol == key.R:
-            parent.game_play = maze_assets(parent.info[0][0], parent.info[0][1], parent.info[0][2], parent.info[0][3], parent.number_of_gum)
-            parent.player.lvl_score = 0
-            parent.player.change_maze(parent.game_play)
-            parent.state = GameState.PLAYING
+        if symbol == key.W:
+            if self.selected == None:
+                self.selected = self.continue_button
+            else:
+                num = self.buttons.index(self.selected) + 1 if self.buttons.index(self.selected) + 1 < len(self.buttons) else 0
+                self.selected = self.buttons[num]
+            for i in self.buttons:
+                i.button.color =  (50, 100, 200)
+            self.selected.button.color = (100, 150, 255)
+        if symbol == key.S:
+            if self.selected == None:
+                self.selected = self.continue_button
+            else:
+                num = self.buttons.index(self.selected) - 1 if self.buttons.index(self.selected) - 1 >= 0 else len(self.buttons)-1
+                self.selected = self.buttons[num]
+            for i in self.buttons:
+                i.button.color =  (50, 100, 200)
+            self.selected.button.color = (100, 150, 255)
+        if symbol == key.ENTER:
+            if self.selected is not None:
+                if self.selected.name == "continue":
+                    parent.state = GameState.PLAYING
+                elif self.selected.name == "exit":
+                    parent.game_play = None
+                    parent.state = GameState.MENU
+                elif self.selected.name == "restart":
+                    parent.game_play = maze_assets(parent.info[0][0], parent.info[0][1], parent.info[0][2], parent.info[0][3], parent.number_of_gum)
+                    parent.player.lvl_score = 0
+                    parent.player.change_maze(parent.game_play)
+                    parent.state = GameState.PLAYING
         if symbol == key.ESCAPE:
             parent.game_play = None
             parent.state = GameState.MENU
@@ -236,7 +262,8 @@ class Pause_screen():
     def on_mouse_press(self, x, y, button, modifiers, parent):
         if (self.exit_button.button.x <= x <= self.exit_button.button.x + self.exit_button.button.width and
             self.exit_button.button.y <= y <= self.exit_button.button.y + self.exit_button.button.height):
-            parent.close()
+            parent.game_play = None
+            parent.state = GameState.MENU
 
         if (self.continue_button.button.x <= x <= self.continue_button.button.x + self.continue_button.button.width and
             self.continue_button.button.y <= y <= self.continue_button.button.y + self.continue_button.button.height):
@@ -254,22 +281,28 @@ class Pause_screen():
             self.exit_button.button.y <= y <= self.exit_button.button.y + self.exit_button.button.height):
 
             self.exit_button.button.color = (100, 150, 255)
+            self.selected = None
         else:
-            self.exit_button.button.color = (50, 100, 200)
+            if self.selected == None:
+                self.exit_button.button.color = (50, 100, 200)
 
         if (self.continue_button.button.x <= x <= self.continue_button.button.x + self.continue_button.button.width and
             self.continue_button.button.y <= y <= self.continue_button.button.y + self.continue_button.button.height):
 
             self.continue_button.button.color = (100, 150, 255)
+            self.selected = None
         else:
-            self.continue_button.button.color = (50, 100, 200)
+            if self.selected == None:
+                self.continue_button.button.color = (50, 100, 200)
 
         if (self.restart_button.button.x <= x <= self.restart_button.button.x + self.restart_button.button.width and
             self.restart_button.button.y <= y <= self.restart_button.button.y + self.restart_button.button.height):
 
             self.restart_button.button.color = (100, 150, 255)
+            self.selected = None
         else:
-            self.restart_button.button.color = (50, 100, 200)
+            if self.selected == None:
+                self.restart_button.button.color = (50, 100, 200)
 
 
 class Win_screen():
@@ -349,7 +382,6 @@ class leaderboard_screen():
     def __init__(self, screen_w, screen_h, data):
         self.data = sorted(data, key=lambda x: list(x.values())[0], reverse=True)
         self.lead_batch = pyglet.graphics.Batch()
-        print(self.data)
         cell_size = (screen_h-300)//10
         self.obj = []
         offset = 0
@@ -410,3 +442,26 @@ class leaderboard_screen():
         if symbol == key.ESCAPE:
             parent.game_play = None
             parent.state = GameState.MENU
+
+
+class character_selection:
+    def __init__(self, screen_w, screen_h):
+        self.char_sel_batch = pyglet.graphics.Batch()
+        image_path = os.path.join(os.path.dirname(__file__), "zelda.png")
+        sheet = pyglet.image.load(image_path)
+        grid = pyglet.image.ImageGrid(sheet, 4, 4)
+        self.player1 = pyglet.sprite.Sprite(
+            grid[0],
+            x=screen_w//8,
+            y=screen_h//2,
+            batch=self.char_sel_batch
+        )
+        image_path = os.path.join(os.path.dirname(__file__), "link.png")
+        sheet = pyglet.image.load(image_path)
+        grid = pyglet.image.ImageGrid(sheet, 4, 4)
+        self.player2 = pyglet.sprite.Sprite(
+            grid[0],
+            x=screen_w - (screen_w//8),
+            y=screen_h//2,
+            batch=self.char_sel_batch
+        )

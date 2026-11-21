@@ -6,7 +6,8 @@ from player_class import player
 from pathlib import Path
 import os
 from pyglet.window import mouse
-
+pyglet.font.add_file("src/JacquardaBastarda9-Regular.ttf")
+pyglet.font.add_file("src/Micro5-Regular.ttf")
 
 class button:
     def __init__(self, name, button, label):
@@ -29,9 +30,10 @@ class menu_screen():
         )
         start_label = pyglet.text.Label(
             "PLAY",
-            x=start_button.x + start_button.width / 2,
-            y=start_button.y + start_button.height / 2,
-            font_size= (screen_h + screen_w)//100,
+            x=start_button.x+5 + start_button.width / 2,
+            y=start_button.y+5 + start_button.height / 2,
+            font_name="Micro 5",
+            font_size= (screen_h + screen_w)//50,
             anchor_x="center",
             anchor_y="center",
             batch=self.menu_batch
@@ -49,9 +51,10 @@ class menu_screen():
 
         Exit_label = pyglet.text.Label(
             "EXIT",
-            x=Exit_button.x + Exit_button.width / 2,
-            y=Exit_button.y + Exit_button.height / 2,
-            font_size=(screen_h + screen_w) // 100,
+            x=Exit_button.x+5 + Exit_button.width / 2,
+            y=Exit_button.y+5 + Exit_button.height / 2,
+            font_size=(screen_h + screen_w) // 50,
+            font_name="Micro 5",
             anchor_x="center",
             anchor_y="center",
             batch=self.menu_batch
@@ -68,9 +71,10 @@ class menu_screen():
         )
         leaderboard_label = pyglet.text.Label(
             "LEADERBOARD",
-            x=leaderboard_button.x + leaderboard_button.width / 2,
-            y=leaderboard_button.y + leaderboard_button.height / 2,
-            font_size= (screen_h + screen_w)//110,
+            x=leaderboard_button.x+5 + leaderboard_button.width / 2,
+            y=leaderboard_button.y+5 + leaderboard_button.height / 2,
+            font_name="Micro 5",
+            font_size= (screen_h + screen_w)//60,
             anchor_x="center",
             anchor_y="center",
             batch=self.menu_batch
@@ -78,7 +82,7 @@ class menu_screen():
         self.leaderboard_button = button("leaderboard", leaderboard_button, leaderboard_label)
         ##
         self.buttons = [self.exit_button, self.leaderboard_button, self.start_button]
-        self.title = pyglet.text.Label(text="PAC-MAN", font_size=100, color=(255, 255, 255, 255), x=screen_w//2, y=screen_h//1.3, anchor_x='center', anchor_y='center', align='center', multiline=False, batch=self.menu_batch, group=None)
+        self.title = pyglet.text.Label(text="PAC-MAN",font_name="Micro 5", font_size=250, color=(255, 255, 255, 255), x=screen_w//2, y=screen_h//1.3, anchor_x='center', anchor_y='center', align='center', multiline=False, batch=self.menu_batch, group=None)
 
     def on_key_press(self, symbol, modifiers, parent):
         if symbol == key.W:
